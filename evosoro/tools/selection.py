@@ -1,6 +1,43 @@
 import random
 import math
 
+import copy
+import numpy as np
+
+
+def fit_tournament_selection(population, tournament_size=3):
+    """Return a list of selected individuals from the population.
+
+    The selection is based on the fitness values.
+
+    Parameters
+    ----------
+    population : Population
+        This provides the individuals for selection.
+    tournament_size : number
+
+    Returns
+    -------
+    new_population : list
+        A list of selected individuals.
+
+    """
+
+    new_population = []
+
+    # extract the best individual
+    population.sort_by_objectives()
+    new_population.append(population[0])
+
+    while len(new_population) < population.pop_size:
+        indices = random.sample(range(len(population)), tournament_size)
+        fitnesses = [population[i].fitness for i in indices]
+        max_indx = np.argmax(fitnesses)
+
+        new_population.append(copy.deepcopy(population[indices[max_indx]]))
+
+    return new_population
+
 
 def pareto_selection(population):
     """Return a list of selected individuals from the population.
@@ -21,9 +58,6 @@ def pareto_selection(population):
 
     """
     new_population = []
-
-    # SAM: moved this into calc_dominance()
-    # population.sort(key="id", reverse=False) # <- if tied on all objectives, give preference to newer individual
 
     # (re)compute dominance for each individual
     population.calc_dominance()

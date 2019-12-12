@@ -1,10 +1,10 @@
-import numpy as np
-import random
 import copy
 import inspect
+import math
+import numpy as np
+import random
 
-
-def create_new_children_through_mutation(pop, print_log, new_children=None, mutate_network_probs=None,
+def create_new_children_through_cppn_mutation(pop, print_log, new_children=None, mutate_network_probs=None,
                                          max_mutation_attempts=1500):
     """Create copies, with modification, of existing individuals in the population.
 
@@ -69,8 +69,6 @@ def create_new_children_through_mutation(pop, print_log, new_children=None, muta
 
             for name, details in clone.genotype.to_phenotype_mapping.items():
                 details["old_state"] = copy.deepcopy(details["state"])
-
-            # old_individual = copy.deepcopy(clone)
 
             for selected_net_idx in selected_networks:
                 mutation_counter = 0
@@ -152,7 +150,43 @@ def create_new_children_through_mutation(pop, print_log, new_children=None, muta
     return new_children
 
 
+def mutate_controllers(pop, children, crossover_rate=0.4):
+    # controllers crossover
+    random.shuffle(children)
+    for i in range(0, int(math.floor(crossover_rate*pop.pop_size))):
+        indices = random.sample(range(len(pop)), 2)
+        contr_1 = pop[indices[0]].genotype.controller
+        contr_2 = pop[indices[1]].genotype.controller
+
+        child_contr = children[i].genotype.controller
+        for attr in child_contr.__dict__.keys():
+            child_contr[attr] = (contr_1[attr]+contr_2[attr])/2
+    random.shuffle(children)
+
+    for child in children:
+        child.genotype.controller.mutate()
+
+    return children
+
+
+def create_new_children(pop, print_log):
+    """Create copies, with modification, of existing individuals in the population.
+
+        Parameters
+        ----------
+        pop : Population class
+            This provides the individuals to mutate.
+
+        print_log : PrintLog()
+            For logging
+    """
+    cppn_mutated_children = create_new_children_through_cppn_mutation(pop, print_log)
+    new_children = mutate_controllers(pop, cppn_mutated_children)
+
+    return new_children
+
+
 def genome_wide_mutation(pop, print_log):
     mutate_network_probs = [1 for _ in range(len(pop[0].genotype))]
-    return create_new_children_through_mutation(pop, print_log, mutate_network_probs=mutate_network_probs)
+    return create_new_children_through_cppn_mutation(pop, print_log, mutate_network_probs=mutate_network_probs)
 

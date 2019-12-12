@@ -56,7 +56,16 @@ def evaluate_all(sim, env, pop, print_log, save_vxa_every, run_directory, run_na
     num_evaluated_this_gen = 0
     ids_to_analyze = []
 
+    controller_evolution = hasattr(pop[0].genotype, "controller")
+
     for ind in pop:
+
+        # set environmental parameters defined in the controller
+        if controller_evolution:
+            controller = ind.genotype.controller
+            env.temp_amp = env.temp_base + controller.temp_amplitude
+            env.period = controller.temp_period
+            env.cte = controller.muscles_cte
 
         # write the phenotype of a SoftBot to a file so that VoxCad can access for sim.
         ind.md5 = write_voxelyze_file(sim, env, ind, run_directory, run_name)

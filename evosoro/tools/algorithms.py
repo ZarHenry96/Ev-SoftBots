@@ -6,8 +6,8 @@ import subprocess as sub
 from functools import partial
 
 from evaluation import evaluate_all
-from selection import pareto_selection, pareto_tournament_selection
-from mutation import create_new_children_through_mutation, genome_wide_mutation
+from selection import fit_tournament_selection, pareto_selection, pareto_tournament_selection
+from mutation import create_new_children, create_new_children_through_cppn_mutation, genome_wide_mutation
 from logging import PrintLog, initialize_folders, make_gen_directories, write_gen_stats
 
 
@@ -77,8 +77,6 @@ class PopulationBasedOptimizer(Optimizer):
         print_log.add_timer("evaluation")
         self.start_time = print_log.timers["start"]  # sync start time with logging
 
-        # sub.call("clear", shell=True)
-
         if not continued_from_checkpoint:  # generation zero
             self.directory = directory
             self.name = name
@@ -90,7 +88,7 @@ class PopulationBasedOptimizer(Optimizer):
             sub.call("touch {}/RUNNING".format(self.directory), shell=True)
             self.evaluate(self.sim, self.env[self.curr_env_idx], self.pop, print_log, save_vxa_every, self.directory,
                           self.name, max_eval_time, time_to_try_again, save_lineages)
-            self.select(self.pop)  # only produces dominated_by stats, no selection happening (population not replaced)
+            self.select(self.pop)  # only produces stats, no selection happening (population not replaced)
             write_gen_stats(self.pop, self.directory, self.name, save_vxa_every, save_pareto, save_nets,
                             save_lineages=save_lineages)
 
@@ -135,7 +133,7 @@ class PopulationBasedOptimizer(Optimizer):
                           self.name, max_eval_time, time_to_try_again, save_lineages)
             print_log.message("Fitness evaluation finished", timer_name="evaluation")  # record total eval time in log
 
-            # perform selection by pareto fronts
+            # perform selection
             new_population = self.select(self.pop)
 
             # print population to stdout and save all individual data
@@ -153,15 +151,21 @@ class PopulationBasedOptimizer(Optimizer):
             sub.call("touch {0}/RUN_FINISHED && rm {0}/RUNNING".format(self.directory), shell=True)
 
 
+class ControllerOptimization(PopulationBasedOptimizer):
+    def __init__(self, sim, env, pop):
+        PopulationBasedOptimizer.__init__(self, sim, env, pop, fit_tournament_selection, create_new_children)
+
+
 class ParetoOptimization(PopulationBasedOptimizer):
     def __init__(self, sim, env, pop):
-        PopulationBasedOptimizer.__init__(self, sim, env, pop, pareto_selection, create_new_children_through_mutation)
+        PopulationBasedOptimizer.__init__(self, sim, env, pop,
+                                          pareto_selection, create_new_children_through_cppn_mutation)
 
 
 class ParetoTournamentOptimization(PopulationBasedOptimizer):
     def __init__(self, sim, env, pop):
         PopulationBasedOptimizer.__init__(self, sim, env, pop, pareto_tournament_selection,
-                                          create_new_children_through_mutation)
+                                          create_new_children_through_cppn_mutation)
 
 
 class GenomeWideMutationOptimization(PopulationBasedOptimizer):
@@ -172,5 +176,5 @@ class GenomeWideMutationOptimization(PopulationBasedOptimizer):
 class SetMutRateOptimization(PopulationBasedOptimizer):
     def __init__(self, sim, env, pop, mut_net_probs):
         PopulationBasedOptimizer.__init__(self, sim, env, pop, pareto_selection,
-                                          partial(create_new_children_through_mutation,
+                                          partial(create_new_children_through_cppn_mutation,
                                                   mutate_network_probs=mut_net_probs))

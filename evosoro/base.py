@@ -50,46 +50,29 @@ class Sim(VoxCadParams):
 class Env(VoxCadParams):
     """Container for VoxCad environment parameters."""
 
-    def __init__(self, frequency=4.0, gravity_enabled=1, temp_enabled=1, floor_enabled=1, floor_slope=0.0,
+    def __init__(self, period=0.25, gravity_enabled=1, temp_enabled=1, floor_enabled=1, floor_slope=0.0,
                  lattice_dimension=0.01, fat_stiffness=5e+006, bone_stiffness=5e+008, muscle_stiffness=5e+006,
-                 sticky_floor=0, time_between_traces=0, actuation_variance=0, temp_amp=39):
+                 cte=0.01, sticky_floor=0, time_between_traces=0, actuation_variance=0, temp_amp=39, temp_base=25):
 
         VoxCadParams.__init__(self)
 
         self.sub_groups = ["Fixed_Regions", "Forced_Regions", "Gravity", "Thermal"]
 
-        self.frequency = frequency
+        self.period = period
         self.gravity_enabled = gravity_enabled
         self.floor_enabled = floor_enabled
         self.temp_enabled = temp_enabled
         self.floor_slope = floor_slope
-        self.lattice_dimension = lattice_dimension  # TODO: remove this (it is in Material)
-        self.muscle_stiffness = muscle_stiffness  # TODO: remove this (it is in Material)
-        self.bone_stiffness = bone_stiffness  # TODO: remove this (it is in Material)
-        self.fat_stiffness = fat_stiffness  # TODO: remove this (it is in Material)
+        self.lattice_dimension = lattice_dimension
+        self.muscle_stiffness = muscle_stiffness
+        self.bone_stiffness = bone_stiffness
+        self.fat_stiffness = fat_stiffness
+        self.cte = cte
         self.sticky_floor = sticky_floor
         self.time_between_traces = time_between_traces
         self.actuation_variance = actuation_variance
         self.temp_amp = temp_amp
-
-
-class Material(VoxCadParams):
-    """Container for VoxCad material parameters."""
-
-    # TODO: this class is currently not used
-
-    def __init__(self, lattice_dimension=0.01, softest_material=5, material_stiffness=5e+006, dim_adj=1, line_offset=0,
-                 layer_offset=0, squeeze=1):
-        VoxCadParams.__init__(self)
-
-        self.sub_groups = ["Lattice", "Voxel"]
-        self.palette = {}
-
-    def add_material_to_palette(self, id, mat_type, name, rgba, mat_model, elastic_mod, plastic_mod, yield_stress,
-                                fail_model, fail_stress, fail_strain, density, poissons_ratio, cte, u_static,
-                                u_dynamic):
-        self.palette[id] = {"Name": name}
-        # TODO: match structure
+        self.temp_base = temp_base
 
 
 class ObjectiveDict(dict):

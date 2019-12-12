@@ -69,6 +69,9 @@ def normalize(x):
     return x
 
 
+def clamp(n, minn, maxn):
+    return max(min(maxn, n), minn)
+
 def xml_format(tag):
     """Ensures that tag is encapsulated inside angle brackets."""
     if tag[0] != "<":
