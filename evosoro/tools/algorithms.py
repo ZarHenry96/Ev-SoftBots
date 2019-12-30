@@ -91,19 +91,10 @@ class PopulationBasedOptimizer(Optimizer):
             self.select(self.pop)  # only produces stats, no selection happening (population not replaced)
             write_gen_stats(self.pop, self.directory, self.name, save_vxa_every, save_pareto, save_nets,
                             save_lineages=save_lineages)
+            print_log.message("Saving checkpoint at generation {0}".format(self.pop.gen), timer_name="start")
+            self.save_checkpoint(self.directory, self.pop.gen)
 
         while self.pop.gen < max_gens:
-
-            if self.pop.gen % checkpoint_every == 0:
-                print_log.message("Saving checkpoint at generation {0}".format(self.pop.gen+1), timer_name="start")
-                self.save_checkpoint(self.directory, self.pop.gen)
-
-            if self.elapsed_time(units="h") > max_hours_runtime:
-                self.autosuspended = True
-                print_log.message("Autosuspending at generation {0}".format(self.pop.gen+1), timer_name="start")
-                self.save_checkpoint(self.directory, self.pop.gen)
-                sub.call("touch {0}/AUTOSUSPENDED && rm {0}/RUNNING".format(self.directory), shell=True)
-                break
 
             self.pop.gen += 1
             print_log.message("Creating folders structure for this generation")
@@ -145,15 +136,26 @@ class PopulationBasedOptimizer(Optimizer):
             self.pop.individuals = new_population
             print_log.message("Population size reduced to %d" % len(self.pop))
 
+            if self.pop.gen % checkpoint_every == 0:
+                print_log.message("Saving checkpoint at generation {0}".format(self.pop.gen), timer_name="start")
+                self.save_checkpoint(self.directory, self.pop.gen)
+
+            if self.elapsed_time(units="h") > max_hours_runtime:
+                self.autosuspended = True
+                print_log.message("Autosuspending at generation {0}".format(self.pop.gen), timer_name="start")
+                self.save_checkpoint(self.directory, self.pop.gen)
+                sub.call("touch {0}/AUTOSUSPENDED && rm {0}/RUNNING".format(self.directory), shell=True)
+                break
+
         if not self.autosuspended:  # print end of run stats
-            print_log.message("Finished {0} generations".format(self.pop.gen + 1))
+            print_log.message("Finished {0} generations".format(self.pop.gen))
             print_log.message("DONE!", timer_name="start")
             sub.call("touch {0}/RUN_FINISHED && rm {0}/RUNNING".format(self.directory), shell=True)
 
 
 class ControllerOptimization(PopulationBasedOptimizer):
-    def __init__(self, sim, env, pop):
-        PopulationBasedOptimizer.__init__(self, sim, env, pop, fit_tournament_selection, create_new_children)
+    def __init__(self, sim, env, pop, selection_func=fit_tournament_selection):
+        PopulationBasedOptimizer.__init__(self, sim, env, pop, selection_func, create_new_children)
 
 
 class ParetoOptimization(PopulationBasedOptimizer):

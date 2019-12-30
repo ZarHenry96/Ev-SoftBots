@@ -5,7 +5,7 @@ import copy
 import numpy as np
 
 
-def fit_tournament_selection(population, tournament_size=3):
+def fit_tournament_selection(population, tournament_size=2):
     """Return a list of selected individuals from the population.
 
     The selection is based on the fitness values.
@@ -138,11 +138,9 @@ def pareto_tournament_selection(population):
 
         if population.dominated_in_multiple_objectives(ind0, ind1):
             print "(fit) {0} dominated by {1}".format(ind0.fitness, ind1.fitness)
-            print "(age) {0} dominated by {1}".format(ind0.age, ind1.age)
             population.pop(inds[0])
         elif population.dominated_in_multiple_objectives(ind1, ind0):
             print "(fit) {1} dominated by {0}".format(ind0.fitness, ind1.fitness)
-            print "(age) {1} dominated by {0}".format(ind0.age, ind1.age)
             population.pop(inds[1])
         # else:
         #     population.pop(random.choice(inds))

@@ -31,6 +31,7 @@ This setup is similar to the one described in:
 import random
 import numpy as np
 import subprocess as sub
+from functools import partial
 import os
 import sys
 
@@ -44,14 +45,14 @@ from evosoro.softbot import Genotype, Phenotype, Population
 from evosoro.tools.algorithms import ControllerOptimization
 from evosoro.tools.utils import count_occurrences, make_material_tree
 from evosoro.tools.checkpointing import continue_from_checkpoint
-
+from evosoro.tools.selection import pareto_selection, pareto_tournament_selection
 
 VOXELYZE_VERSION = '_voxcad'
 sub.call("cp ../" + VOXELYZE_VERSION + "/voxelyzeMain/voxelyze .", shell=True)
 
 NUM_RANDOM_INDS = 1  # Number of random individuals to insert each generation
-MAX_GENS = 30  # Number of generations
-POPSIZE = 3  # Population size (number of individuals in the population)
+MAX_GENS = 20  # Number of generations (the first one is included)
+POPSIZE = 15  # Population size (number of individuals in the population)
 IND_SIZE = (6, 6, 6)  # Bounding box dimensions (x,y,z). e.g. (6, 6, 6) -> workspace is a cube of 6x6x6 voxels
 SIM_TIME = 5  # (seconds), including INIT_TIME!
 INIT_TIME = 1
@@ -72,7 +73,7 @@ RUN_NAME = "Controller"
 CHECKPOINT_EVERY = 1  # How often to save an snapshot of the execution state to later resume the algorithm
 SAVE_POPULATION_EVERY = 1  # How often (every x generations) we save a snapshot of the evolving population
 
-SEED = 1
+SEED = 42
 random.seed(SEED)  # Initializing the random number generator for reproducibility
 np.random.seed(SEED)
 
@@ -142,12 +143,23 @@ my_objective_dict = ObjectiveDict()
 # in a fitness .xml file, with a tag named "NormFinalDist"
 my_objective_dict.add_objective(name="fitness", maximize=True, tag="<NormFinalDist>")
 
+'''
+# Adding another objective named "energy", which should be minimized.
+# This information is computed in Python as the occurrences of active materials (materials number 3 and 4)
+my_objective_dict.add_objective(name="energy", maximize=False, tag=None,
+                                node_func=partial(count_occurrences, keys=[3, 4]),
+                                output_node_name="material")
+'''
+
 # Initializing a population of SoftBots
 my_pop = Population(my_objective_dict, MyGenotype, MyPhenotype, pop_size=POPSIZE)
 
 # Setting up our optimization
-my_optimization = ControllerOptimization(my_sim, my_env, my_pop)
 
+my_optimization = ControllerOptimization(my_sim, my_env, my_pop)
+'''
+my_optimization = ControllerOptimization(my_sim, my_env, my_pop, selection_func=pareto_selection)
+'''
 # And, finally, our main
 if __name__ == "__main__":
 
