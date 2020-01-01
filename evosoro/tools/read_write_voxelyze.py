@@ -38,7 +38,6 @@ def read_voxlyze_results(population, print_log, filename="softbotsOutput.xml"):
 
 
 def write_voxelyze_file(sim, env, individual, run_directory, run_name):
-
     # TODO: work in base.py to remove redundant static text in this function
 
     # update any env variables based on outputs instead of writing outputs in
@@ -130,10 +129,32 @@ def write_voxelyze_file(sim, env, individual, run_directory, run_name):
     for name, tag in env.new_param_tag_dict.items():
         voxelyze_file.write(tag + str(getattr(env, name)) + "</" + tag[1:] + "\n")
 
-    voxelyze_file.write(
-        "<Fixed_Regions>\n\
-        <NumFixed>0</NumFixed>\n\
-        </Fixed_Regions>\n\
+    voxelyze_file.write("    <Boundary_Conditions>\n")
+
+    if env.obstacles:
+        num_bcs = 0
+        for obstacle in env.obst_list:
+            num_bcs += len(obstacle.walls)
+        voxelyze_file.write("        <NumBCs>" + str(num_bcs) + "</NumBCs>\n")
+        for obstacle in env.obst_list:
+            for wall in obstacle.walls:
+                voxelyze_file.write("        <FRegion>\n\
+            <PrimType>" + str(obstacle.prim_type) + "</PrimType>\n\
+            <X>" + str(wall["X"]) + "</X>\n\
+            <Y>" + str(wall["Y"]) + "</Y>\n\
+            <Z>" + str(wall["Z"]) + "</Z>\n\
+            <dX>" + str(wall["dX"]) + "</dX>\n\
+            <dY>" + str(wall["dY"]) + "</dY>\n\
+            <dZ>" + str(wall["dZ"]) + "</dZ>\n\
+            <alfa>" + str(obstacle.alfa) + "</alfa>\n\
+            <DofFixed>63</DofFixed>\n\
+        </FRegion>\n"
+                )
+    else:
+        voxelyze_file.write("       <NumBCs>0</NumBCs>\n")
+
+    voxelyze_file.write("\
+        </Boundary_Conditions>\n\
         <Forced_Regions>\n\
         <NumForced>0</NumForced>\n\
         </Forced_Regions>\n\
@@ -146,7 +167,7 @@ def write_voxelyze_file(sim, env, individual, run_directory, run_name):
         <Thermal>\n\
         <TempEnabled>" + str(env.temp_enabled) + "</TempEnabled>\n\
         <TempAmp>" + str(env.temp_amp) + "</TempAmp>\n\
-        <TempBase>"  + str(env.temp_base) + "</TempBase>\n\
+        <TempBase>" + str(env.temp_base) + "</TempBase>\n\
         <VaryTempEnabled>1</VaryTempEnabled>\n\
         <TempPeriod>" + str(env.period) + "</TempPeriod>\n\
         </Thermal>\n\
@@ -280,7 +301,7 @@ def write_voxelyze_file(sim, env, individual, run_directory, run_name):
             </Display>\n\
             <Mechanical>\n\
             <MatModel>0</MatModel>\n\
-            <Elastic_Mod>5e+007</Elastic_Mod>\n\
+            <Elastic_Mod>5e+009</Elastic_Mod>\n\
             <Plastic_Mod>0</Plastic_Mod>\n\
             <Yield_Stress>0</Yield_Stress>\n\
             <FailModel>0</FailModel>\n\
@@ -294,10 +315,20 @@ def write_voxelyze_file(sim, env, individual, run_directory, run_name):
             </Mechanical>\n\
         </Material>\n\
         </Palette>\n\
-        <Structure Compression=\"ASCII_READABLE\">\n\
-        <X_Voxels>" + str(individual.genotype.orig_size_xyz[0]) + "</X_Voxels>\n\
-        <Y_Voxels>" + str(individual.genotype.orig_size_xyz[1]) + "</Y_Voxels>\n\
-        <Z_Voxels>" + str(individual.genotype.orig_size_xyz[2]) + "</Z_Voxels>\n")
+        <Structure Compression=\"ASCII_READABLE\">\n")
+
+    if env.obstacles:
+        voxelyze_file.write("\
+            <X_Voxels>" + str(env.env_size[0]) + "</X_Voxels>\n\
+            <Y_Voxels>" + str(env.env_size[1]) + "</Y_Voxels>\n\
+            <Z_Voxels>" + str(env.env_size[2]) + "</Z_Voxels>\n"
+        )
+    else:
+        voxelyze_file.write("\
+            <X_Voxels>" + str(individual.genotype.orig_size_xyz[0]) + "</X_Voxels>\n\
+            <Y_Voxels>" + str(individual.genotype.orig_size_xyz[1]) + "</Y_Voxels>\n\
+            <Z_Voxels>" + str(individual.genotype.orig_size_xyz[2]) + "</Z_Voxels>\n"
+        )
 
     all_tags = [details["tag"] for name, details in individual.genotype.to_phenotype_mapping.items()]
     if "<Data>" not in all_tags:  # not evolving topology -- fixed presence/absence of voxels
@@ -317,7 +348,7 @@ def write_voxelyze_file(sim, env, individual, run_directory, run_name):
 
         # start tag
         if details["env_kws"] is None:
-            voxelyze_file.write(details["tag"]+"\n")
+            voxelyze_file.write(details["tag"] + "\n")
 
         # record any additional params associated with the output
         if details["params"] is not None:
@@ -326,22 +357,36 @@ def write_voxelyze_file(sim, env, individual, run_directory, run_name):
 
         if details["env_kws"] is None:
             # write the output state matrix to file
-            for z in range(individual.genotype.orig_size_xyz[2]):
-                voxelyze_file.write("<Layer><![CDATA[")
-                for y in range(individual.genotype.orig_size_xyz[1]):
-                    for x in range(individual.genotype.orig_size_xyz[0]):
+            if not env.obstacles:
+                for z in range(individual.genotype.orig_size_xyz[2]):
+                    voxelyze_file.write("<Layer><![CDATA[")
+                    for y in range(individual.genotype.orig_size_xyz[1]):
+                        for x in range(individual.genotype.orig_size_xyz[0]):
 
-                        state = details["output_type"](details["state"][x, y, z])
-                        # for n, network in enumerate(individual.genotype):
-                        #     if name in network.output_node_names:
-                        #         state = individual.genotype[n].graph.node[name]["state"][x, y, z]
+                            state = details["output_type"](details["state"][x, y, z])
+                            # for n, network in enumerate(individual.genotype):
+                            #     if name in network.output_node_names:
+                            #         state = individual.genotype[n].graph.node[name]["state"][x, y, z]
 
-                        voxelyze_file.write(str(state))
-                        if details["tag"] != "<Data>":  # TODO more dynamic
-                            voxelyze_file.write(", ")
-                        string_for_md5 += str(state)
+                            voxelyze_file.write(str(state))
+                            if details["tag"] != "<Data>":  # TODO more dynamic
+                                voxelyze_file.write(", ")
+                            string_for_md5 += str(state)
 
-                voxelyze_file.write("]]></Layer>\n")
+                    voxelyze_file.write("]]></Layer>\n")
+            else:
+                for z in range(env.env_size[2]):
+                    voxelyze_file.write("<Layer><![CDATA[")
+                    for y in range(env.env_size[1]):
+                        for x in range(env.env_size[0]):
+                            state = env.env_matrix[x][y][z]
+
+                            voxelyze_file.write(str(state))
+                            if details["tag"] != "<Data>":  # TODO more dynamic
+                                voxelyze_file.write(", ")
+                            string_for_md5 += str(state)
+
+                    voxelyze_file.write("]]></Layer>\n")
 
         # end tag
         if details["env_kws"] is None:

@@ -1,5 +1,10 @@
-from evosoro.tools.utils import xml_format
+from __future__ import division
 
+import math
+import numpy as np
+
+from evosoro.obstacle import Obstacle
+from evosoro.tools.utils import xml_format
 
 # TODO: classes should hold dictionaries of variables, vxa tags and values
 # TODO: remove most of the hard coded text from read_write_voxelyze.py and replace with a few loops
@@ -52,7 +57,8 @@ class Env(VoxCadParams):
 
     def __init__(self, period=0.25, gravity_enabled=1, temp_enabled=1, floor_enabled=1, floor_slope=0.0,
                  lattice_dimension=0.01, fat_stiffness=5e+006, bone_stiffness=5e+008, muscle_stiffness=5e+006,
-                 cte=0.01, sticky_floor=0, time_between_traces=0, actuation_variance=0, temp_amp=39, temp_base=25):
+                 cte=0.01, temp_base=25, temp_amp=39, sticky_floor=0, time_between_traces=0, actuation_variance=0,
+                 obstacles=False, ind_size=(6, 6, 6), env_size=(50, 50, 6), init_num_obstacles=1):
 
         VoxCadParams.__init__(self)
 
@@ -68,11 +74,50 @@ class Env(VoxCadParams):
         self.bone_stiffness = bone_stiffness
         self.fat_stiffness = fat_stiffness
         self.cte = cte
+        self.temp_amp = temp_amp
+        self.temp_base = temp_base
         self.sticky_floor = sticky_floor
         self.time_between_traces = time_between_traces
         self.actuation_variance = actuation_variance
-        self.temp_amp = temp_amp
-        self.temp_base = temp_base
+        self.obstacles = obstacles
+        if self.obstacles:
+            self.ind_size = ind_size
+            self.env_size = env_size
+            self.obst_list = []
+            self.generate_obstacles(init_num_obstacles)
+            self.env_matrix = np.zeros(self.env_size, dtype=int)
+            self.build_env_matrix()
+
+    def generate_obstacles(self, num_obstacles, max_num_obstacles=5):
+        total = min(num_obstacles, max_num_obstacles)
+        for i in range(0, total):
+            diameter_x = self.ind_size[0] + int(round(((i+1)/max_num_obstacles)*(self.env_size[0]-self.ind_size[0])))
+            if (diameter_x % 2) != 0:
+                diameter_x += 1
+            diameter_y = self.ind_size[1] + int(round(((i+1)/max_num_obstacles)*(self.env_size[1]-self.ind_size[1])))
+            if (diameter_y % 2) != 0:
+                diameter_y += 1
+            self.obst_list.append(Obstacle(diameter_x, diameter_y, self.env_size, 1))
+
+    def build_env_matrix(self):
+        for obstacle in self.obst_list:
+            for wall in obstacle.walls:
+                x_start = int(round(wall["X"] * self.env_size[0]))
+                x_end = x_start + int(round(wall["dX"] * self.env_size[0]))
+                for i in range(x_start, x_end):
+                    y_start = int(round(wall["Y"] * self.env_size[1]))
+                    y_end = y_start + int(round(wall["dY"] * self.env_size[1]))
+                    for j in range(y_start, y_end):
+                        for k in range(0, obstacle.height):
+                            self.env_matrix[i][j][k] = 5
+
+    def insert_individual(self, ind_details):
+        x_start = int((self.env_size[0]-self.ind_size[0])/2)
+        for i in range(x_start, x_start + self.ind_size[0]):
+            y_start = int((self.env_size[1]-self.ind_size[1])/2)
+            for j in range(y_start, y_start + self.ind_size[0]):
+                for k in range(0, self.ind_size[2]):
+                    self.env_matrix[i][j][k] = ind_details["output_type"](ind_details["state"][i-x_start, j-y_start, k])
 
 
 class ObjectiveDict(dict):

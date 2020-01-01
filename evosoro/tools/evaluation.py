@@ -15,7 +15,7 @@ from read_write_voxelyze import read_voxlyze_results, write_voxelyze_file
 # sub.call("cp ../_voxcad/qhull .", shell=True)
 
 
-def evaluate_all(sim, env, pop, print_log, save_vxa_every, run_directory, run_name, max_eval_time=60,
+def evaluate_all(sim, env, pop, print_log, save_vxa_every, run_directory, run_name, max_eval_time=120,
                  time_to_try_again=10, save_lineages=False):
     """Evaluate all individuals of the population in VoxCad.
 
@@ -66,6 +66,12 @@ def evaluate_all(sim, env, pop, print_log, save_vxa_every, run_directory, run_na
             env.temp_amp = env.temp_base + controller.temp_amplitude
             env.period = controller.temp_period
             env.cte = controller.muscles_cte
+
+        # insert individual in the environment if obstacles have been enabled
+        if env.obstacles:
+            for name, details in ind.genotype.to_phenotype_mapping.items():
+                if details["env_kws"] is None:
+                    env.insert_individual(details)
 
         # write the phenotype of a SoftBot to a file so that VoxCad can access for sim.
         ind.md5 = write_voxelyze_file(sim, env, ind, run_directory, run_name)
