@@ -341,8 +341,11 @@ def write_voxelyze_file(sim, env, individual, run_directory, run_name):
             voxelyze_file.write("]]></Layer>\n")
         voxelyze_file.write("</Data>\n")
 
-    # append custom parameters
+    # Avoid re-evaluation of an individual
     string_for_md5 = ""
+    string_for_md5 += str(env.temp_amp)
+    string_for_md5 += str(env.period)
+    string_for_md5 += str(env.cte)
 
     for name, details in individual.genotype.to_phenotype_mapping.items():
 

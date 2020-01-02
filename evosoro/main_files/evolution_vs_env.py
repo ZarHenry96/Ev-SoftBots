@@ -51,7 +51,7 @@ VOXELYZE_VERSION = '_voxcad'
 sub.call("cp ../" + VOXELYZE_VERSION + "/voxelyzeMain/voxelyze .", shell=True)
 
 NUM_RANDOM_INDS = 1  # Number of random individuals to insert each generation
-MAX_GENS = 20  # Number of generations (the first one is included)
+MAX_GENS = 40  # Number of generations (the first one is included)
 POPSIZE = 15  # Population size (number of individuals in the population)
 IND_SIZE = (6, 6, 6)  # Bounding box dimensions (x,y,z). e.g. (6, 6, 6) -> workspace is a cube of 6x6x6 voxels
 SIM_TIME = 5  # (seconds), including INIT_TIME!
@@ -71,12 +71,12 @@ SAVE_LINEAGES = False
 MAX_TIME = 8  # (hours) how long to wait before autosuspending
 EXTRA_GENS = 0  # extra gens to run when continuing from checkpoint
 
-RUN_DIR = "evolution_vs_env_data"  # Subdirectory where results are going to be generated
+RUN_DIR = "evolution_vs_env_controller_27_data"  # Subdirectory where results are going to be generated
 RUN_NAME = "Environment"
 CHECKPOINT_EVERY = 1  # How often to save an snapshot of the execution state to later resume the algorithm
 SAVE_POPULATION_EVERY = 1  # How often (every x generations) we save a snapshot of the evolving population
 
-SEED = 42
+SEED = 27
 random.seed(SEED)  # Initializing the random number generator for reproducibility
 np.random.seed(SEED)
 
@@ -136,40 +136,37 @@ class MyPhenotype(Phenotype):
 my_sim = Sim(dt_frac=DT_FRAC, simulation_time=SIM_TIME, fitness_eval_init_time=INIT_TIME)
 
 # Setting up the environment object
-my_env = Env(obstacles=True, ind_size=IND_SIZE, env_size=ENV_SIZE, init_num_obstacles=INIT_NUM_OBSTACLES)
+my_env = Env(obstacles=True, ind_size=IND_SIZE, env_size=ENV_SIZE, init_num_obstacles=INIT_NUM_OBSTACLES,
+             time_between_traces=0.1)
 
 # Now specifying the objectives for the optimization.
 # Creating an objectives dictionary
 my_objective_dict = ObjectiveDict()
 
 # Adding an objective named "fitness", which we want to maximize. This information is returned by Voxelyze
-# in a fitness .xml file, with a tag named "NormFinalDist"
-my_objective_dict.add_objective(name="fitness", maximize=True, tag="<maxSquaredXYDist>")
+# in a fitness .xml file, with a tag named "LCoefficient"
+my_objective_dict.add_objective(name="fitness", maximize=True, tag="<LCoefficient>")
 
-# Add an objective to minimize the age of solutions: promotes diversity
-my_objective_dict.add_objective(name="age", maximize=False, tag=None)
-
-my_objective_dict.add_objective(name="num_voxels", maximize=False, tag=None,
-                                node_func=np.count_nonzero, output_node_name="material")
+# Adding another objective named "energy", which should be minimized.
+# This information is not returned by Voxelyze (tag=None): it is instead computed in Python.
+# by counting the occurrences of active materials (materials number 3 and 4)
+my_objective_dict.add_objective(name="energy", maximize=False, tag=None,
+                                node_func=partial(count_occurrences, keys=[3, 4]),
+                                output_node_name="material")
 
 # Initializing a population of SoftBots
 my_pop = Population(my_objective_dict, MyGenotype, MyPhenotype, pop_size=POPSIZE)
 
 # Setting up our optimization
+'''
 my_optimization = ParetoOptimization(my_sim, my_env, my_pop)
 '''
 my_optimization = ControllerOptimization(my_sim, my_env, my_pop, selection_func=pareto_selection)
-'''
 
 # And, finally, our main
 if __name__ == "__main__":
 
-    # my_optimization.run(max_hours_runtime=MAX_TIME, max_gens=MAX_GENS, num_random_individuals=NUM_RANDOM_INDS,
-    #                     directory=RUN_DIR, name=RUN_NAME, max_eval_time=MAX_EVAL_TIME,
-    #                     time_to_try_again=TIME_TO_TRY_AGAIN, checkpoint_every=CHECKPOINT_EVERY,
-    #                     save_vxa_every=SAVE_POPULATION_EVERY, save_lineages=SAVE_LINEAGES)
-
-    # Here is how to use the checkpointing mechanism
+    # Checkpointing mechanism
     if not os.path.isfile("./" + RUN_DIR + "/pickledPops/Gen_0.pickle"):
         # start optimization
         my_optimization.run(max_hours_runtime=MAX_TIME, max_gens=MAX_GENS, num_random_individuals=NUM_RANDOM_INDS,

@@ -28,5 +28,5 @@ class Controller(object):
         self.temp_period = clamp(self.temp_period, 0.001, 1)
 
         self.muscles_cte += random.gauss(0, 0.01)
-        self.muscles_cte = clamp(self.muscles_cte, 0.0001, 0.05)
+        self.muscles_cte = clamp(self.muscles_cte, 0.0001, 0.035)
 

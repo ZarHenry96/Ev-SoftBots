@@ -10,6 +10,7 @@ See <http://www.opensource.org/licenses/lgpl-3.0.html> for license details.
 
 #include "VX_SimGA.h"
 #include <iostream>
+#include <cmath>
 
 CVX_SimGA::CVX_SimGA()
 {
@@ -38,12 +39,27 @@ void CVX_SimGA::WriteResultFile(CXML_Rip* pXML)
 	double normRegimeDist = SS.CurPosteriorDist - SS.EndOfLifetimePosteriorY;
 	double normFrozenDist = 0;
 
-	double XDist = pow(SS.CurCM.x-IniCM.x,2)/LocalVXC.GetLatticeDim();
-	double YDist = pow(SS.CurCM.y-IniCM.y,2)/LocalVXC.GetLatticeDim();
-	double maxSquaredXYDist = XDist > YDist ? XDist : YDist;
+	double xFinDist = pow(pow(SS.CurCM.x-IniCM.x,2),0.5)/LocalVXC.GetLatticeDim();
+	double yFinDist = pow(pow(SS.CurCM.y-IniCM.y,2),0.5)/LocalVXC.GetLatticeDim();
+	double maxXYDist = xFinDist > yFinDist ? xFinDist : yFinDist;
+
+    double timeMaxReached = CurTime - AfterlifeTime;
+    double speed = 0.0;
+    if (pEnv->getTimeBetweenTraces() > 0.0){
+        bool found = false;
+        for(std::vector<vfloat>::size_type i = 0; i != SS.CMTrace.size() && !found; ++i) {
+                double curXDist =  pow(pow(SS.CMTrace[i].x-IniCM.x,2),0.5)/LocalVXC.GetLatticeDim();
+                double curYDist = pow(pow(SS.CMTrace[i].y-IniCM.y,2),0.5)/LocalVXC.GetLatticeDim();
+
+                if(abs(curXDist - maxXYDist) < 0.1 || abs(curYDist - maxXYDist) < 0.1){
+                    timeMaxReached = SS.CMTraceTime[i];
+                    found = true;
+                }
+        }
+        speed = maxXYDist / timeMaxReached;
+    }
 
 	double finalDistY = (SS.CurCM.y-IniCM.y) / LocalVXC.GetLatticeDim();
-
 	double FallAdjPostY = SS.EndOfLifetimePosteriorY;
 
     double PushDist = 0;
@@ -149,7 +165,13 @@ void CVX_SimGA::WriteResultFile(CXML_Rip* pXML)
 			pXML->Element("NormFinalDist", normFinalDist - normFrozenDist);
 			pXML->Element("NormRegimeDist", normRegimeDist);
 			pXML->Element("NormFrozenDist", normFrozenDist);
-			pXML->Element("maxSquaredXYDist", maxSquaredXYDist);
+
+			pXML->Element("MaxXYDist", maxXYDist);
+			if (pEnv->getTimeBetweenTraces() > 0.0){
+                pXML->Element("TimeMaxXYDist", timeMaxReached);
+                pXML->Element("Speed", speed);
+                pXML->Element("LCoefficient", maxXYDist*speed);
+            }
 
 			pXML->Element("FinalDist", finalDist);
 			pXML->Element("finalDistY", finalDistY);

@@ -88,7 +88,7 @@ class Env(VoxCadParams):
             self.env_matrix = np.zeros(self.env_size, dtype=int)
             self.build_env_matrix()
 
-    def generate_obstacles(self, num_obstacles, max_num_obstacles=5):
+    def generate_obstacles(self, num_obstacles, max_num_obstacles=7):
         total = min(num_obstacles, max_num_obstacles)
         for i in range(0, total):
             diameter_x = self.ind_size[0] + int(round(((i+1)/max_num_obstacles)*(self.env_size[0]-self.ind_size[0])))
