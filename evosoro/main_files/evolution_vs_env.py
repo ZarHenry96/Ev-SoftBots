@@ -42,7 +42,7 @@ from evosoro.base import Sim, Env, ObjectiveDict
 from evosoro.controller import Controller
 from evosoro.networks import CPPN
 from evosoro.softbot import Genotype, Phenotype, Population
-from evosoro.tools.algorithms import ControllerOptimization
+from evosoro.tools.algorithms import ControllerOptimization, ParetoOptimization
 from evosoro.tools.utils import count_occurrences, make_material_tree
 from evosoro.tools.checkpointing import continue_from_checkpoint
 from evosoro.tools.selection import pareto_selection, pareto_tournament_selection
@@ -62,11 +62,11 @@ INIT_TEMP_AMPL = 14
 INIT_TEMP_PERIOD = 0.25
 INIT_MUSCLES_CTE = 0.01
 
-ENV_SIZE = (50, 50, 6) # Radius of the environment around the softbot
+ENV_SIZE = (50, 50, 6) # Size of the environment including the softbot
 INIT_NUM_OBSTACLES = 1
 
-TIME_TO_TRY_AGAIN = 30  # (seconds) wait this long before assuming simulation crashed and resending
-MAX_EVAL_TIME = 60  # (seconds) wait this long before giving up on evaluating this individual
+TIME_TO_TRY_AGAIN = 45  # (seconds) wait this long before assuming simulation crashed and resending
+MAX_EVAL_TIME = 120  # (seconds) wait this long before giving up on evaluating this individual
 SAVE_LINEAGES = False
 MAX_TIME = 8  # (hours) how long to wait before autosuspending
 EXTRA_GENS = 0  # extra gens to run when continuing from checkpoint
@@ -144,25 +144,23 @@ my_objective_dict = ObjectiveDict()
 
 # Adding an objective named "fitness", which we want to maximize. This information is returned by Voxelyze
 # in a fitness .xml file, with a tag named "NormFinalDist"
-my_objective_dict.add_objective(name="fitness", maximize=True, tag="<NormFinalDist>")
+my_objective_dict.add_objective(name="fitness", maximize=True, tag="<maxSquaredXYDist>")
 
-'''
-# Adding another objective named "energy", which should be minimized.
-# This information is computed in Python as the occurrences of active materials (materials number 3 and 4)
-my_objective_dict.add_objective(name="energy", maximize=False, tag=None,
-                                node_func=partial(count_occurrences, keys=[3, 4]),
-                                output_node_name="material")
-'''
+# Add an objective to minimize the age of solutions: promotes diversity
+my_objective_dict.add_objective(name="age", maximize=False, tag=None)
+
+my_objective_dict.add_objective(name="num_voxels", maximize=False, tag=None,
+                                node_func=np.count_nonzero, output_node_name="material")
 
 # Initializing a population of SoftBots
 my_pop = Population(my_objective_dict, MyGenotype, MyPhenotype, pop_size=POPSIZE)
 
 # Setting up our optimization
-
-my_optimization = ControllerOptimization(my_sim, my_env, my_pop)
+my_optimization = ParetoOptimization(my_sim, my_env, my_pop)
 '''
 my_optimization = ControllerOptimization(my_sim, my_env, my_pop, selection_func=pareto_selection)
 '''
+
 # And, finally, our main
 if __name__ == "__main__":
 

@@ -38,6 +38,10 @@ void CVX_SimGA::WriteResultFile(CXML_Rip* pXML)
 	double normRegimeDist = SS.CurPosteriorDist - SS.EndOfLifetimePosteriorY;
 	double normFrozenDist = 0;
 
+	double XDist = pow(SS.CurCM.x-IniCM.x,2)/LocalVXC.GetLatticeDim();
+	double YDist = pow(SS.CurCM.y-IniCM.y,2)/LocalVXC.GetLatticeDim();
+	double maxSquaredXYDist = XDist > YDist ? XDist : YDist;
+
 	double finalDistY = (SS.CurCM.y-IniCM.y) / LocalVXC.GetLatticeDim();
 
 	double FallAdjPostY = SS.EndOfLifetimePosteriorY;
@@ -145,6 +149,7 @@ void CVX_SimGA::WriteResultFile(CXML_Rip* pXML)
 			pXML->Element("NormFinalDist", normFinalDist - normFrozenDist);
 			pXML->Element("NormRegimeDist", normRegimeDist);
 			pXML->Element("NormFrozenDist", normFrozenDist);
+			pXML->Element("maxSquaredXYDist", maxSquaredXYDist);
 
 			pXML->Element("FinalDist", finalDist);
 			pXML->Element("finalDistY", finalDistY);
