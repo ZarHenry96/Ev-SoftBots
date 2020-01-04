@@ -45,13 +45,13 @@ from evosoro.softbot import Genotype, Phenotype, Population
 from evosoro.tools.algorithms import ControllerOptimization, ParetoOptimization
 from evosoro.tools.utils import count_occurrences, make_material_tree
 from evosoro.tools.checkpointing import continue_from_checkpoint
-from evosoro.tools.selection import pareto_selection, pareto_tournament_selection
+from evosoro.tools.selection import pareto_selection, fit_tournament_selection
 
 VOXELYZE_VERSION = '_voxcad'
 sub.call("cp ../" + VOXELYZE_VERSION + "/voxelyzeMain/voxelyze .", shell=True)
 
 NUM_RANDOM_INDS = 1  # Number of random individuals to insert each generation
-MAX_GENS = 40  # Number of generations (the first one is included)
+MAX_GENS = 30  # Number of generations (the first one is excluded)
 POPSIZE = 15  # Population size (number of individuals in the population)
 IND_SIZE = (6, 6, 6)  # Bounding box dimensions (x,y,z). e.g. (6, 6, 6) -> workspace is a cube of 6x6x6 voxels
 SIM_TIME = 5  # (seconds), including INIT_TIME!
@@ -71,12 +71,12 @@ SAVE_LINEAGES = False
 MAX_TIME = 8  # (hours) how long to wait before autosuspending
 EXTRA_GENS = 0  # extra gens to run when continuing from checkpoint
 
-RUN_DIR = "evolution_vs_env_controller_27_data"  # Subdirectory where results are going to be generated
+RUN_DIR = "evolution_vs_env_controller_0.01_pareto_17_constraint_data"  # Results subdirectory
 RUN_NAME = "Environment"
 CHECKPOINT_EVERY = 1  # How often to save an snapshot of the execution state to later resume the algorithm
 SAVE_POPULATION_EVERY = 1  # How often (every x generations) we save a snapshot of the evolving population
 
-SEED = 27
+SEED = 17
 random.seed(SEED)  # Initializing the random number generator for reproducibility
 np.random.seed(SEED)
 
@@ -116,7 +116,7 @@ class MyGenotype(Genotype):
 
 # Define a custom phenotype, inheriting from the Phenotype class
 class MyPhenotype(Phenotype):
-    def is_valid(self, min_percent_full=0.3, min_percent_muscle=0.1):
+    def is_valid(self, min_percent_full=0.3, min_percent_tissue=0.1, min_percent_muscle=0.1):
         # override super class function to redefine what constitutes a valid individuals
         for name, details in self.genotype.to_phenotype_mapping.items():
             if np.isnan(details["state"]).any():
@@ -124,11 +124,17 @@ class MyPhenotype(Phenotype):
             if name == "material":
                 state = details["state"]
                 # Discarding the robot if it doesn't have at least a given percentage of non-empty voxels
-                if np.sum(state>0) < np.product(self.genotype.orig_size_xyz) * min_percent_full:
+                if np.sum(state > 0) < np.product(self.genotype.orig_size_xyz) * min_percent_full:
                     return False
+
+                # Discarding the robot if it doesn't have at least a given percentage of tissues (materials 1 and 2)
+                if count_occurrences(state, [1, 2]) < np.sum(state > 0) * min_percent_tissue:
+                    return False
+
                 # Discarding the robot if it doesn't have at least a given percentage of muscles (materials 3 and 4)
-                if count_occurrences(state, [3, 4]) < np.product(self.genotype.orig_size_xyz) * min_percent_muscle:
+                if count_occurrences(state, [3, 4]) < np.sum(state > 0) * min_percent_muscle:
                     return False
+
         return True
 
 
@@ -143,16 +149,32 @@ my_env = Env(obstacles=True, ind_size=IND_SIZE, env_size=ENV_SIZE, init_num_obst
 # Creating an objectives dictionary
 my_objective_dict = ObjectiveDict()
 
-# Adding an objective named "fitness", which we want to maximize. This information is returned by Voxelyze
+'''
+# Adding an objective named "L-coeff", which we want to maximize. This information is returned by Voxelyze
 # in a fitness .xml file, with a tag named "LCoefficient"
 my_objective_dict.add_objective(name="fitness", maximize=True, tag="<LCoefficient>")
+'''
 
+# Adding an objective named "fitness", which we want to maximize. This information is returned by Voxelyze
+# in a fitness .xml file, with a tag named "MaxXYDist"
+my_objective_dict.add_objective(name="fitness", maximize=True, tag="<MaxXYDist>")
+
+# Adding an objective named "L-coeff", which we want to maximize. This information is returned by Voxelyze
+# in a fitness .xml file, with a tag named "LCoefficient"
+my_objective_dict.add_objective(name="L-coeff", maximize=True, tag="<LCoefficient>")
+
+# Add an objective to minimize the age of solutions: promotes diversity
+my_objective_dict.add_objective(name="age", maximize=False, tag=None)
+
+
+'''
 # Adding another objective named "energy", which should be minimized.
 # This information is not returned by Voxelyze (tag=None): it is instead computed in Python.
 # by counting the occurrences of active materials (materials number 3 and 4)
 my_objective_dict.add_objective(name="energy", maximize=False, tag=None,
                                 node_func=partial(count_occurrences, keys=[3, 4]),
                                 output_node_name="material")
+'''
 
 # Initializing a population of SoftBots
 my_pop = Population(my_objective_dict, MyGenotype, MyPhenotype, pop_size=POPSIZE)

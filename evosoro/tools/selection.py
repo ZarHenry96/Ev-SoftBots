@@ -23,20 +23,14 @@ def fit_tournament_selection(population, tournament_size=2):
 
     """
 
-    new_population = []
-
-    # extract the best individual
-    population.sort_by_objectives()
-    new_population.append(population[0])
-
-    while len(new_population) < population.pop_size:
+    while len(population) > population.pop_size:
         indices = random.sample(range(len(population)), tournament_size)
         fitnesses = [population[i].fitness for i in indices]
-        max_indx = np.argmax(fitnesses)
+        max_indx = np.argmin(fitnesses)
 
-        new_population.append(copy.deepcopy(population[indices[max_indx]]))
+        population.pop(indices[max_indx])
 
-    return new_population
+    return population.individuals
 
 
 def pareto_selection(population):

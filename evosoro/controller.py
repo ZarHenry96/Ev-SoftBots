@@ -22,11 +22,11 @@ class Controller(object):
 
     def mutate(self):
         self.temp_amplitude += random.gauss(0, 1)
-        self.temp_amplitude = clamp(self.temp_amplitude, 1, 25)
+        self.temp_amplitude = clamp(self.temp_amplitude, 1, 20)
 
         self.temp_period += random.gauss(0, 0.1)
-        self.temp_period = clamp(self.temp_period, 0.001, 1)
+        self.temp_period = clamp(self.temp_period, 0.01, 0.75)
 
         self.muscles_cte += random.gauss(0, 0.01)
-        self.muscles_cte = clamp(self.muscles_cte, 0.0001, 0.035)
+        self.muscles_cte = clamp(self.muscles_cte, 0.001, 0.04)
 

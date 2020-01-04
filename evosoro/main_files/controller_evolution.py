@@ -45,7 +45,7 @@ from evosoro.softbot import Genotype, Phenotype, Population
 from evosoro.tools.algorithms import ControllerOptimization
 from evosoro.tools.utils import count_occurrences, make_material_tree
 from evosoro.tools.checkpointing import continue_from_checkpoint
-from evosoro.tools.selection import pareto_selection, pareto_tournament_selection
+from evosoro.tools.selection import pareto_selection
 
 VOXELYZE_VERSION = '_voxcad'
 sub.call("cp ../" + VOXELYZE_VERSION + "/voxelyzeMain/voxelyze .", shell=True)
