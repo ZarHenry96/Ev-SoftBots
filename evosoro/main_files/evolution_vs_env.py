@@ -51,7 +51,7 @@ VOXELYZE_VERSION = '_voxcad'
 sub.call("cp ../" + VOXELYZE_VERSION + "/voxelyzeMain/voxelyze .", shell=True)
 
 NUM_RANDOM_INDS = 1  # Number of random individuals to insert each generation
-MAX_GENS = 30  # Number of generations (the first one is excluded)
+MAX_GENS = 20  # Number of generations (the first one is excluded)
 POPSIZE = 15  # Population size (number of individuals in the population)
 IND_SIZE = (6, 6, 6)  # Bounding box dimensions (x,y,z). e.g. (6, 6, 6) -> workspace is a cube of 6x6x6 voxels
 SIM_TIME = 5  # (seconds), including INIT_TIME!
@@ -71,7 +71,7 @@ SAVE_LINEAGES = False
 MAX_TIME = 8  # (hours) how long to wait before autosuspending
 EXTRA_GENS = 0  # extra gens to run when continuing from checkpoint
 
-RUN_DIR = "evolution_vs_env_controller_0.01_pareto_17_constraint_data"  # Results subdirectory
+RUN_DIR = "evolution_vs_env_controller_0.01_pareto_17_constraint_bone_data"  # Results subdirectory
 RUN_NAME = "Environment"
 CHECKPOINT_EVERY = 1  # How often to save an snapshot of the execution state to later resume the algorithm
 SAVE_POPULATION_EVERY = 1  # How often (every x generations) we save a snapshot of the evolving population
@@ -129,6 +129,10 @@ class MyPhenotype(Phenotype):
 
                 # Discarding the robot if it doesn't have at least a given percentage of tissues (materials 1 and 2)
                 if count_occurrences(state, [1, 2]) < np.sum(state > 0) * min_percent_tissue:
+                    return False
+
+                # Discarding the robot if it doesn't have at least one bone (material 2)
+                if count_occurrences(state, [2]) == 0:
                     return False
 
                 # Discarding the robot if it doesn't have at least a given percentage of muscles (materials 3 and 4)
