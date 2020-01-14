@@ -42,7 +42,7 @@ from evosoro.base import Sim, Env, ObjectiveDict
 from evosoro.new_material import NewMaterial
 from evosoro.networks import CPPN
 from evosoro.softbot import Genotype, Phenotype, Population
-from evosoro.tools.algorithms import MaterialsOptimization
+from evosoro.tools.algorithms import MaterialsOptimization, ParetoOptimization
 from evosoro.tools.utils import count_occurrences, make_material_tree
 from evosoro.tools.checkpointing import continue_from_checkpoint
 from evosoro.tools.selection import pareto_selection, pareto_tournament_selection
@@ -53,7 +53,7 @@ sub.call("cp ../" + VOXELYZE_VERSION + "/voxelyzeMain/voxelyze .", shell=True)
 
 NUM_RANDOM_INDS = 1  # Number of random individuals to insert each generation
 MAX_GENS = 50  # Number of generations (the first one is included)
-POPSIZE = 15  # Population size (number of individuals in the population)
+POPSIZE = 2  # Population size (number of individuals in the population)
 IND_SIZE = (6, 6, 6)  # Bounding box dimensions (x,y,z). e.g. (6, 6, 6) -> workspace is a cube of 6x6x6 voxels
 SIM_TIME = 5  # (seconds), including INIT_TIME!
 INIT_TIME = 1
@@ -130,7 +130,7 @@ class MyPhenotype(Phenotype):
 my_sim = Sim(dt_frac=DT_FRAC, simulation_time=SIM_TIME, fitness_eval_init_time=INIT_TIME)
 
 # Setting up the environment object
-my_env = Env(sticky_floor=0, time_between_traces=0.1, save_traces=True)
+my_env = Env(sticky_floor=0, time_between_traces=0.5, save_traces=1, novelty_based=True)
 
 # Now specifying the objectives for the optimization.
 # Creating an objectives dictionary

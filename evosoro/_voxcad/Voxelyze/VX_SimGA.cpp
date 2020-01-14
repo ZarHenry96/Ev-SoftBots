@@ -202,10 +202,10 @@ void CVX_SimGA::WriteResultFile(CXML_Rip* pXML)
 				for(std::vector<vfloat>::size_type i = 0; i != SS.CMTraceTime.size(); ++i)
 				{
 	   				pXML->DownLevel("TraceStep");
-                    pXML->Element("Time",SS.CMTraceTime[i]);
-                    pXML->Element("TraceX",SS.CMTrace[i].x);
-                    pXML->Element("TraceY",SS.CMTrace[i].y);
-                    pXML->Element("TraceZ",SS.CMTrace[i].z);
+                        pXML->Element("Time",SS.CMTraceTime[i]);
+                        pXML->Element("TraceX",SS.CMTrace[i].x);
+                        pXML->Element("TraceY",SS.CMTrace[i].y);
+                        pXML->Element("TraceZ",SS.CMTrace[i].z);
 					pXML->UpLevel();
 				}
 			pXML->UpLevel();

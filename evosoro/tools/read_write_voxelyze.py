@@ -1,6 +1,7 @@
 import hashlib
 import os
 import time
+import xml.etree.ElementTree as ET
 import random
 
 
@@ -35,6 +36,37 @@ def read_voxlyze_results(population, print_log, filename="softbotsOutput.xml"):
         this_file.close()
 
     return results
+
+
+def read_voxelyze_trajectory(population, print_log, filename="softbotsOutput.xml"):
+    i = 0
+    max_attempts = 60
+    file_size = 0
+    this_file = ""
+
+    while (i < max_attempts) and (file_size == 0):
+        try:
+            file_size = os.stat(filename).st_size
+            this_file = open(filename)
+            this_file.close()
+        except ImportError:  # TODO: is this the correct exception?
+            file_size = 0
+        i += 1
+        time.sleep(1)
+
+    if file_size == 0:
+        print_log.message("ERROR: Cannot find a non-empty fitness file in %d attempts: abort" % max_attempts)
+        exit(1)
+
+    trajectory = []
+    root = ET.parse(filename).getroot()
+    for trace in root.findall('CMTrace/TraceStep'):
+        x = float(trace.find('TraceX').text)
+        y = float(trace.find('TraceY').text)
+        z = float(trace.find('TraceZ').text)
+        trajectory.append((x, y, z))
+
+    return trajectory
 
 
 def write_voxelyze_file(sim, env, individual, run_directory, run_name):
