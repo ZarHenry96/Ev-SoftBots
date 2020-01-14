@@ -130,7 +130,7 @@ class MyPhenotype(Phenotype):
 my_sim = Sim(dt_frac=DT_FRAC, simulation_time=SIM_TIME, fitness_eval_init_time=INIT_TIME)
 
 # Setting up the environment object
-my_env = Env(sticky_floor=0, time_between_traces=0)
+my_env = Env(sticky_floor=0, time_between_traces=0.1, save_traces=True)
 
 # Now specifying the objectives for the optimization.
 # Creating an objectives dictionary
@@ -140,14 +140,17 @@ my_objective_dict = ObjectiveDict()
 # in a fitness .xml file, with a tag named "NormFinalDist"
 my_objective_dict.add_objective(name="fitness", maximize=True, tag="<NormFinalDist>")
 
-# Adding another objective named "old_materials", which should be minimized.
-# This information is computed in Python as the occurrences of old materials (materials number 1, 2, 3 and 4)
-my_objective_dict.add_objective(name="old_materials", maximize=False, tag=None,
-                                node_func=partial(count_occurrences, keys=[1, 2, 3, 4]),
+# Adding another objective named "energy", which should be minimized.
+# This information is computed in Python as the occurrences of active materials (materials number 3 and 4)
+my_objective_dict.add_objective(name="energy", maximize=False, tag=None,
+                                node_func=partial(count_occurrences, keys=[3, 4]),
                                 output_node_name="material")
 
 # Initializing a population of SoftBots
 my_pop = Population(my_objective_dict, MyGenotype, MyPhenotype, pop_size=POPSIZE)
+
+# Setting up our optimization
+my_optimization = ParetoOptimization(my_sim, my_env, my_pop) #TODO: change
 
 # And, finally, our main
 if __name__ == "__main__":

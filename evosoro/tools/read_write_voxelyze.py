@@ -205,6 +205,7 @@ def write_voxelyze_file(sim, env, individual, run_directory, run_name):
         <TempPeriod>" + str(env.period) + "</TempPeriod>\n\
         </Thermal>\n\
         <TimeBetweenTraces>" + str(env.time_between_traces) + "</TimeBetweenTraces>\n\
+        <SaveTraces>" + str(env.save_traces) + "</SaveTraces>\n\
         <StickyFloor>" + str(env.sticky_floor) + "</StickyFloor>\n\
         </Environment>\n")
 
