@@ -158,6 +158,11 @@ class ControllerOptimization(PopulationBasedOptimizer):
         PopulationBasedOptimizer.__init__(self, sim, env, pop, selection_func, create_new_children)
 
 
+class MaterialsOptimization(PopulationBasedOptimizer):
+    def __init__(self, sim, env, pop, selection_func=pareto_selection):
+        PopulationBasedOptimizer.__init__(self, sim, env, pop, selection_func, create_new_children)
+
+
 class ParetoOptimization(PopulationBasedOptimizer):
     def __init__(self, sim, env, pop):
         PopulationBasedOptimizer.__init__(self, sim, env, pop,

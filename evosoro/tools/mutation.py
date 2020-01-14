@@ -169,6 +169,38 @@ def mutate_controllers(pop, children, crossover_rate=0.4):
     return children
 
 
+def mutate_new_materials(pop, children, crossover_rate=0.4):
+    # new materials crossover
+    random.shuffle(children)
+    for i in range(0, int(math.floor(crossover_rate*pop.pop_size))):
+        indices = random.sample(range(len(pop)), 2)
+        new_materials_1 = pop[indices[0]].genotype.materials
+        new_materials_2 = pop[indices[1]].genotype.materials
+
+        child_new_materials = children[i].genotype.materials
+        for material_idx in child_new_materials.keys():
+            child_new_materials[material_idx].young_modulus = (new_materials_1.get(
+                material_idx).young_modulus + new_materials_2.get(material_idx).young_modulus) / 2
+            child_new_materials[material_idx].density = (new_materials_1.get(
+                material_idx).density + new_materials_2.get(material_idx).density) / 2
+            child_new_materials[material_idx].cte = (new_materials_1.get(
+                material_idx).cte + new_materials_2.get(material_idx).cte) / 2
+
+    random.shuffle(children)
+
+    for child in children:
+        for material_idx in child.genotype.materials.keys():
+            if material_idx == "9":
+                # counterphase actuation
+                child.genotype.materials[material_idx].young_modulus = child.genotype.materials["8"].young_modulus
+                child.genotype.materials[material_idx].density = child.genotype.materials["8"].density
+                child.genotype.materials[material_idx].cte = -child.genotype.materials["8"].cte
+            else:
+                child.genotype.materials[material_idx].mutate()
+
+    return children
+
+
 def create_new_children(pop, print_log):
     """Create copies, with modification, of existing individuals in the population.
 
@@ -181,7 +213,12 @@ def create_new_children(pop, print_log):
             For logging
     """
     cppn_mutated_children = create_new_children_through_cppn_mutation(pop, print_log)
-    new_children = mutate_controllers(pop, cppn_mutated_children)
+    controller_evolution = hasattr(pop[0].genotype, "controller")
+    materials_evolution = hasattr(pop[0].genotype, "materials")
+    if controller_evolution:
+        new_children = mutate_controllers(pop, cppn_mutated_children)
+    elif materials_evolution:
+        new_children = mutate_new_materials(pop, cppn_mutated_children)
 
     return new_children
 

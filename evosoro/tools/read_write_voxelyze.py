@@ -47,6 +47,39 @@ def write_voxelyze_file(sim, env, individual, run_directory, run_name):
                 setattr(env, env_key, env_func(details["state"]))  # currently only used when evolving frequency
                 # print env_key, env_func(details["state"])
 
+    new_materials = ""
+    if hasattr(individual.genotype, "materials"):
+        for mat_idx in individual.genotype.materials.keys():
+            curr_ind_material = individual.genotype.materials.get(mat_idx)
+            new_material = "        <Material ID=\"{id}\">\n\
+            <MatType>0</MatType>\n\
+            <Name>{name}</Name>\n\
+            <Display>\n\
+            <Red>{r}</Red>\n\
+            <Green>{g}</Green>\n\
+            <Blue>{b}</Blue>\n\
+            <Alpha>1</Alpha>\n\
+            </Display>\n\
+            <Mechanical>\n\
+            <MatModel>0</MatModel>\n\
+            <Elastic_Mod>{young_modulus}</Elastic_Mod>\n\
+            <Plastic_Mod>0</Plastic_Mod>\n\
+            <Yield_Stress>0</Yield_Stress>\n\
+            <FailModel>0</FailModel>\n\
+            <Fail_Stress>0</Fail_Stress>\n\
+            <Fail_Strain>0</Fail_Strain>\n\
+            <Density>{density}</Density>\n\
+            <Poissons_Ratio>0.35</Poissons_Ratio>\n\
+            <CTE>{cte}</CTE>\n\
+            <uStatic>1</uStatic>\n\
+            <uDynamic>0.5</uDynamic>\n\
+            </Mechanical>\n\
+        </Material>\n".format(id=mat_idx, name=curr_ind_material.name,
+                                  r=curr_ind_material.rgb[0], g=curr_ind_material.rgb[1], b=curr_ind_material.rgb[2],
+                                  young_modulus=curr_ind_material.young_modulus, density=curr_ind_material.density,
+                                  cte=curr_ind_material.cte)
+            new_materials += new_material
+
     voxelyze_file = open(run_directory + "/voxelyzeFiles/" + run_name + "--id_%05i.vxa" % individual.id, "w")
 
     voxelyze_file.write(
@@ -313,8 +346,9 @@ def write_voxelyze_file(sim, env, individual, run_directory, run_name):
             <uStatic>1</uStatic>\n\
             <uDynamic>0.5</uDynamic>\n\
             </Mechanical>\n\
-        </Material>\n\
-        </Palette>\n\
+        </Material>\n"
+        + new_materials +
+        "        </Palette>\n\
         <Structure Compression=\"ASCII_READABLE\">\n")
 
     if env.obstacles:
@@ -346,6 +380,13 @@ def write_voxelyze_file(sim, env, individual, run_directory, run_name):
     string_for_md5 += str(env.temp_amp)
     string_for_md5 += str(env.period)
     string_for_md5 += str(env.cte)
+
+    if hasattr(individual.genotype, "materials"):
+        for mat_idx in individual.genotype.materials.keys():
+            curr_ind_material = individual.genotype.materials.get(mat_idx)
+            string_for_md5 += str(curr_ind_material.young_modulus)
+            string_for_md5 += str(curr_ind_material.density)
+            string_for_md5 += str(curr_ind_material.cte)
 
     for name, details in individual.genotype.to_phenotype_mapping.items():
 
