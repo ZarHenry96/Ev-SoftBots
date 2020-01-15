@@ -6,7 +6,7 @@ import subprocess as sub
 from functools import partial
 
 from evaluation import evaluate_all
-from selection import fit_tournament_selection, pareto_selection, pareto_tournament_selection
+from selection import fit_tournament_selection, pareto_selection, pareto_tournament_selection, novelty_based_selection
 from mutation import create_new_children, create_new_children_through_cppn_mutation, genome_wide_mutation
 from logging import PrintLog, initialize_folders, make_gen_directories, write_gen_stats
 
@@ -161,6 +161,11 @@ class ControllerOptimization(PopulationBasedOptimizer):
 class MaterialsOptimization(PopulationBasedOptimizer):
     def __init__(self, sim, env, pop, selection_func=pareto_selection):
         PopulationBasedOptimizer.__init__(self, sim, env, pop, selection_func, create_new_children)
+
+
+class NoveltyBasedOptimization(PopulationBasedOptimizer):
+    def __init__(self, sim, env, pop, selection_func=novelty_based_selection):
+        PopulationBasedOptimizer.__init__(self, sim, env, pop, selection_func, create_new_children_through_cppn_mutation)
 
 
 class ParetoOptimization(PopulationBasedOptimizer):

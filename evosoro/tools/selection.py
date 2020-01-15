@@ -1,9 +1,8 @@
 import random
 import math
-
 import copy
 import numpy as np
-from scipy import spatial
+from utils import AMSS
 
 
 def fit_tournament_selection(population, tournament_size=2):
@@ -145,77 +144,40 @@ def pareto_tournament_selection(population):
     return population.individuals
 
 
-def from_centroids_to_trajectory(centroids):
-    trajectory = []
-    for i in range(1, len(centroids)):
-        trajectory.append(centroids[i] - centroids[i-1])
-    return trajectory
-
-def unit_vector(vector):
-    """ Returns the unit vector of the vector.  """
-    return vector / np.linalg.norm(vector)
-
-def angle_between(v1, v2):
+def novelty_based_selection(population):
     """
-    Returns the angle in radians between vectors 'v1' and 'v2'::
+    Parameters
+    ----------
+    population : Population
+        This provides the individuals for selection.
 
-    angle_between((1, 0, 0), (0, 1, 0))
-    1.5707963267948966
-    angle_between((1, 0, 0), (1, 0, 0))
-    0.0
-    angle_between((1, 0, 0), (-1, 0, 0))
-    3.141592653589793
-
-    Ref. https://stackoverflow.com/questions/2827393/angles-between-two-n-dimensional-vectors-in-python/13849249#13849249
+    Returns
+    -------
+    new_population : list
+        A list of selected individuals.
 
     """
-    v1_u = unit_vector(v1)
-    v2_u = unit_vector(v2)
+    if len(population) <= population.pop_size:
+        return population
+    else:
+        similarities = np.zeros(len(population), dtype=float)
 
-    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+        for i in range(len(population)):
+            for j in range(i, len(population)):
+                sim = AMSS(population[i].trajectory, population[j].trajectory).trajectory_similarity()
+                similarities[i] += sim
+                if i != j:
+                    similarities[j] += sim
 
-def similarity(v1, v2):
-    angle = angle_between(v1, v2)
-    similarity = 0.0
+        for i in range(len(population)):
+            setattr(population[i], "novelty", similarities[i])
 
-    if angle > math.pi / 2.0:
-        similarity = 1 - spatial.distance.cosine(v1, v2)
+        print("similarities: ", similarities)
+        indeces = np.argpartition(similarities, population.pop_size)[:population.pop_size]
+        print("indeces: ", indeces)
+        new_population = [population[i] for i in indeces]
 
-    return similarity
+        for ind in new_population:
+            ind.selected = 1
 
-def AMSS(v1, v2): #Angual Metric for Shape Similarity
-    #reference paper: https://link.springer.com/content/pdf/10.1007%2Fs10044-011-0262-6.pdf
-    if(len(v1)>=1 and len(v2)>=1):
-        sim = similarity(v1[-1], v2[-1])
-        
-        val0 = 2*sim
-        val1 = sim
-        val2 = sim
-
-        if( len(v1)>=2 ):
-            val1 += 2*similarity(v1[-2], v2[-1])
-        if( len(v2)>=2 ):
-            val2 += 2*similarity(v1[-1], v2[-2])
-
-        if(len(v1)>=2 and len(v2)>=2):
-            val0 += AMSS(v1[:-1], v2[:-1])
-            if( len(v1)>=3 ):
-                val1 += AMSS(v1[:-2], v2[:-1])
-            if( len(v2)>=3 ):
-                val2 += AMSS(v1[:-1], v2[:-2])
-    
-    return( max(val0, val1, val2) )
-
-
-if __name__ == "__main__":
-    centroids = []
-    root = ET.parse(trajectory.xml).getroot()
-    for trace in root.findall('CMTrace/TraceStep'):
-        x = float(trace.find('TraceX').text)
-        y = float(trace.find('TraceY').text)
-        z = float(trace.find('TraceZ').text)
-        centroids.append((x, y, z))
-
-    print(centroids)
-    
-    
+        return new_population

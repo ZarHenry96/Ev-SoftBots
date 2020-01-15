@@ -3,6 +3,7 @@ import os
 import time
 import xml.etree.ElementTree as ET
 import random
+import numpy as np
 
 
 def read_voxlyze_results(population, print_log, filename="softbotsOutput.xml"):
@@ -61,10 +62,11 @@ def read_voxelyze_centroids(population, print_log, filename="softbotsOutput.xml"
     centroids = []
     root = ET.parse(filename).getroot()
     for trace in root.findall('CMTrace/TraceStep'):
+        t = float(trace.find('Time').text)
         x = float(trace.find('TraceX').text)
         y = float(trace.find('TraceY').text)
         z = float(trace.find('TraceZ').text)
-        centroids.append((x, y, z))
+        centroids.append(np.array([x, y, z, t]))
 
     return centroids
 
