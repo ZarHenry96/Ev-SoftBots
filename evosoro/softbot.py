@@ -333,7 +333,7 @@ class SoftBot(object):
         self.parent_genotype = self.genotype  # default for randomly generated ind
         self.parent_id = -1
         self.age = 0
-        self.trajectory = []
+        self.centroids = []
 
         # set the objectives as attributes of self (and parent)
         self.objective_dict = objective_dict
