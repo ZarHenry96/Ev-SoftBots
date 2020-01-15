@@ -182,3 +182,40 @@ def similarity(v1, v2):
         similarity = 1 - spatial.distance.cosine(v1, v2)
 
     return similarity
+
+def AMSS(v1, v2): #Angual Metric for Shape Similarity
+    #reference paper: https://link.springer.com/content/pdf/10.1007%2Fs10044-011-0262-6.pdf
+    if(len(v1)>=1 and len(v2)>=1):
+        sim = similarity(v1[-1], v2[-1])
+        
+        val0 = 2*sim
+        val1 = sim
+        val2 = sim
+
+        if( len(v1)>=2 ):
+            val1 += 2*similarity(v1[-2], v2[-1])
+        if( len(v2)>=2 ):
+            val2 += 2*similarity(v1[-1], v2[-2])
+
+        if(len(v1)>=2 and len(v2)>=2):
+            val0 += AMSS(v1[:-1], v2[:-1])
+            if( len(v1)>=3 ):
+                val1 += AMSS(v1[:-2], v2[:-1])
+            if( len(v2)>=3 ):
+                val2 += AMSS(v1[:-1], v2[:-2])
+    
+    return( max(val0, val1, val2) )
+
+
+if __name__ == "__main__":
+    centroids = []
+    root = ET.parse(trajectory.xml).getroot()
+    for trace in root.findall('CMTrace/TraceStep'):
+        x = float(trace.find('TraceX').text)
+        y = float(trace.find('TraceY').text)
+        z = float(trace.find('TraceZ').text)
+        centroids.append((x, y, z))
+
+    print(centroids)
+    
+    
