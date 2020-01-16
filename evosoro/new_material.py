@@ -68,8 +68,8 @@ class NewMaterial(object):
             self.cte += random.gauss(0, 0.01)
             self.cte = clamp(self.cte, 0.001, 0.04)
         elif self.type == "tissue":
-            self.young_modulus += random.gauss(0, 5*1e+003)
-            self.young_modulus = clamp(self.young_modulus, 1e+006, 1e+009)
+            self.young_modulus += random.gauss(0, 5000)
+            self.young_modulus = clamp(self.young_modulus, 5000000.0, 500000000.0)
         else:
             assert False
 

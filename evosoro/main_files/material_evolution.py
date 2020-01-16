@@ -63,9 +63,9 @@ TIME_TO_TRY_AGAIN = 30  # (seconds) wait this long before assuming simulation cr
 MAX_EVAL_TIME = 60  # (seconds) wait this long before giving up on evaluating this individual
 SAVE_LINEAGES = False
 MAX_TIME = 8  # (hours) how long to wait before autosuspending
-EXTRA_GENS = 100  # extra gens to run when continuing from checkpoint
+EXTRA_GENS = 0  # extra gens to run when continuing from checkpoint
 
-RUN_DIR = "materials_evolution_data"  # Subdirectory where results are going to be generated
+RUN_DIR = "minimize_materials_evolution_data"  # Subdirectory where results are going to be generated
 RUN_NAME = "Materials"
 CHECKPOINT_EVERY = 1  # How often to save an snapshot of the execution state to later resume the algorithm
 SAVE_POPULATION_EVERY = 1  # How often (every x generations) we save a snapshot of the evolving population
@@ -177,6 +177,10 @@ my_objective_dict.add_objective(name="fitness", maximize=True, tag="<NormFinalDi
 # This information is computed in Python as the occurrences of old materials (materials number 1, 2, 3 and 4)
 my_objective_dict.add_objective(name="old_materials", maximize=False, tag=None,
                                 node_func=partial(count_occurrences, keys=[1, 2, 3, 4]),
+                                output_node_name="material")
+
+my_objective_dict.add_objective(name="num_voxels", maximize=False, tag=None,
+                                node_func=partial(count_occurrences, keys=[1, 2, 3, 4, 6, 7, 8, 9]),
                                 output_node_name="material")
 
 # Initializing a population of SoftBots
