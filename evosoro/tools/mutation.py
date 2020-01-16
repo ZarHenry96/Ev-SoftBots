@@ -152,17 +152,23 @@ def create_new_children_through_cppn_mutation(pop, print_log, new_children=None,
 
 def mutate_controllers(pop, children, crossover_rate=0.4):
     # controllers crossover
-    random.shuffle(children)
-    for i in range(0, int(math.floor(crossover_rate*pop.pop_size))):
-        indices = random.sample(range(len(pop)), 2)
-        contr_1 = pop[indices[0]].genotype.controller
-        contr_2 = pop[indices[1]].genotype.controller
+    crossover_num = int(math.floor(crossover_rate*len(children)))
+    cr_indices = random.sample(range(0, len(children)), crossover_num)
 
-        child_contr = children[i].genotype.controller
+    for i in range(0, crossover_num):
+        child = children[cr_indices[i]]
+
+        cr_parent_index = random.randint(0, len(pop)-1)
+        while pop[cr_parent_index].id == child.parent_id:
+            cr_parent_index = random.randint(0, len(pop)-1)
+
+        child_contr = child.genotype.controller
+        parent_2_contr = pop[cr_parent_index].genotype.controller
+
         for attr in child_contr.__dict__.keys():
-            child_contr[attr] = (contr_1[attr]+contr_2[attr])/2
-    random.shuffle(children)
+            child_contr[attr] = (child_contr[attr]+parent_2_contr[attr])/2
 
+    random.shuffle(children)
     for child in children:
         child.genotype.controller.mutate()
 
@@ -171,23 +177,28 @@ def mutate_controllers(pop, children, crossover_rate=0.4):
 
 def mutate_new_materials(pop, children, crossover_rate=0.4):
     # new materials crossover
-    random.shuffle(children)
-    for i in range(0, int(math.floor(crossover_rate*pop.pop_size))):
-        indices = random.sample(range(len(pop)), 2)
-        new_materials_1 = pop[indices[0]].genotype.materials
-        new_materials_2 = pop[indices[1]].genotype.materials
+    crossover_num = int(math.floor(crossover_rate * len(children)))
+    cr_indices = random.sample(range(0, len(children)), crossover_num)
 
-        child_new_materials = children[i].genotype.materials
+    for i in range(0, crossover_num):
+        child = children[cr_indices[i]]
+
+        cr_parent_index = random.randint(0, len(pop)-1)
+        while pop[cr_parent_index].id == child.parent_id:
+            cr_parent_index = random.randint(0, len(pop)-1)
+
+        child_new_materials = child.genotype.materials
+        parent_2_new_materials = pop[cr_parent_index].genotype.materials
+
         for material_idx in child_new_materials.keys():
-            child_new_materials[material_idx].young_modulus = (new_materials_1.get(
-                material_idx).young_modulus + new_materials_2.get(material_idx).young_modulus) / 2
-            child_new_materials[material_idx].density = (new_materials_1.get(
-                material_idx).density + new_materials_2.get(material_idx).density) / 2
-            child_new_materials[material_idx].cte = (new_materials_1.get(
-                material_idx).cte + new_materials_2.get(material_idx).cte) / 2
+            child_new_materials[material_idx].young_modulus = (child_new_materials.get(
+                material_idx).young_modulus + parent_2_new_materials.get(material_idx).young_modulus) / 2
+            child_new_materials[material_idx].density = (child_new_materials.get(
+                material_idx).density + parent_2_new_materials.get(material_idx).density) / 2
+            child_new_materials[material_idx].cte = (child_new_materials.get(
+                material_idx).cte + parent_2_new_materials.get(material_idx).cte) / 2
 
     random.shuffle(children)
-
     for child in children:
         for material_idx in child.genotype.materials.keys():
             if material_idx == "9":
