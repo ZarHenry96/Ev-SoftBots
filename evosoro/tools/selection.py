@@ -26,9 +26,9 @@ def fit_tournament_selection(population, tournament_size=2):
     while len(population) > population.pop_size:
         indices = random.sample(range(len(population)), tournament_size)
         fitnesses = [population[i].fitness for i in indices]
-        max_indx = np.argmin(fitnesses)
+        min_indx = np.argmin(fitnesses)
 
-        population.pop(indices[max_indx])
+        population.pop(indices[min_indx])
 
     return population.individuals
 
