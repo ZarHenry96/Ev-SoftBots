@@ -2,6 +2,9 @@ import numpy as np
 import itertools
 import re
 import scipy.ndimage as ndimage
+import math
+from scipy import spatial
+from matplotlib import pyplot as plt
 
 
 def identity(x):
@@ -296,3 +299,122 @@ def count_neighbors(output_state, mask=None):
                 num_neighbors[idx] += presence[neighbor]
 
     return num_neighbors
+
+
+def angle2D_between(vec_1, vec_2):
+    """
+    Returns the angle in radians between vectors 'vec_1' and 'vec_2'::
+
+    """
+    dx = vec_2[0] - vec_1[0]
+    dy = vec_2[1] - vec_1[0]
+
+    angle = math.atan2(dy, dx)
+
+    return angle
+
+def from_centroids_to_trajectory(centroids):
+    #x = [e[0] for e in centroids]
+    #y = [e[1] for e in centroids]
+    #plt.plot(x, y, 'bo')
+
+    #print("before translation: ", centroids)
+    #for i in range(len(centroids) - 1, -1, -1):
+    #    centroids[i][:2] -= centroids[0][:2]
+
+    #x = [e[0] for e in centroids]
+    #y = [e[1] for e in centroids]
+    #plt.plot(x, y, 'g^')
+
+    # apply rotation transformation
+    theta = angle2D_between(centroids[0][:2], centroids[1][:2])
+    #print("theta: ", theta)
+    cos, sin = np.cos(theta), np.sin(theta)
+    rot_mat = np.array(((cos, sin), (-sin, cos)))
+
+    for i in range(0, len(centroids)):
+        mat_mul = np.matmul(rot_mat, centroids[i][:2])
+        centroids[i][:2] = mat_mul
+    #print("after rotation: ", centroids)
+    #print()
+
+    #x = [e[0] for e in centroids]
+    #y = [e[1] for e in centroids]
+    #plt.plot(x, y, 'r+')
+    #plt.axis([-0.05, 0.05, -0.05, 0.05])
+    #plt.show()
+    #plt.close()
+
+    trajectory = []
+    for i in range(1, len(centroids)):
+        trajectory.append(centroids[i] - centroids[i-1])
+
+    return trajectory
+
+
+class AMSS:
+
+    def __init__(self, v1, v2):
+        self.v1 = v1
+        self.v2 = v2
+        self.sim_mat = np.zeros((len(self.v1), len(self.v2)), dtype=float)
+
+    def similarity(self, vec_1, vec_2):
+        angle = angle2D_between(vec_1, vec_2)
+        similarity = 0.0
+
+        if angle < math.pi / 2.0:
+            similarity = 1 - spatial.distance.cosine(vec_1, vec_2)
+
+        return similarity
+
+    def mat_similarity(self, idx_1, idx_2):
+        if self.sim_mat[idx_1, idx_2] != 0.0:
+            return self.sim_mat[idx_1, idx_2]
+        else:
+            sim = self.similarity(self.v1[idx_1], self.v2[idx_2])
+            self.sim_mat[idx_1, idx_2] = sim
+            return sim
+
+    def trajectory_similarity_core(self, idx_1, idx_2):
+        # reference paper: https://link.springer.com/content/pdf/10.1007%2Fs10044-011-0262-6.pdf
+        amss_sim = 0.0
+
+        if idx_1 >= 0 and idx_2 >= 0:
+            sim = self.mat_similarity(idx_1, idx_2)
+
+            sim_0 = 2 * sim
+            sim_2 = sim_1 = sim
+
+            if idx_1 >= 1:
+                sim_1 += 2 * self.mat_similarity(idx_1 - 1, idx_2)
+            if idx_2 >= 1:
+                sim_2 += 2 * self.mat_similarity(idx_1, idx_2 - 1)
+
+            if idx_1 >= 1 and idx_2 >= 1:
+                sim_0 += self.trajectory_similarity_core(idx_1 - 1, idx_2 - 1)
+                if idx_1 >= 2:
+                    sim_1 += self.trajectory_similarity_core(idx_1 - 2, idx_2 - 1)
+                if idx_2 >= 2:
+                    sim_2 += self.trajectory_similarity_core(idx_1 - 1, idx_2 - 2)
+
+            amss_sim = max(sim_0, sim_1, sim_2)
+
+        return amss_sim
+
+    def trajectory_similarity(self):
+        return self.trajectory_similarity_core(len(self.v1) - 1, len(self.v2) - 1)
+
+if __name__ == "__main__":
+    centroids = np.array(
+        [[3, 0], [3, 1], [2, 2], [1, 3], [0, 3], [-1, 3], [-2, 2], [-3, 1], [-3, 0], [-3, -1], [-2, -2], [-1, -3],
+         [0, -3], [1, -3], [2, -2], [3, -1]])
+    trajectories = [[c, c*2, c*3] for c in centroids]
+    for trajectory in trajectories:
+        print("trajectory: ", trajectory)
+        transf_trajectory = from_centroids_to_trajectory(trajectory)
+        print("transf_trajectory: ", transf_trajectory)
+
+
+
+

@@ -58,7 +58,8 @@ class Env(VoxCadParams):
     def __init__(self, period=0.25, gravity_enabled=1, temp_enabled=1, floor_enabled=1, floor_slope=0.0,
                  lattice_dimension=0.01, fat_stiffness=5e+006, bone_stiffness=5e+008, muscle_stiffness=5e+006,
                  cte=0.01, temp_base=25, temp_amp=39, sticky_floor=0, time_between_traces=0, actuation_variance=0,
-                 obstacles=False, ind_size=(6, 6, 6), env_size=(50, 50, 6), init_num_obstacles=1):
+                 obstacles=False, ind_size=(6, 6, 6), env_size=(50, 50, 6), init_num_obstacles=1, save_traces=0,
+                 novelty_based=False):
 
         VoxCadParams.__init__(self)
 
@@ -78,6 +79,8 @@ class Env(VoxCadParams):
         self.temp_base = temp_base
         self.sticky_floor = sticky_floor
         self.time_between_traces = time_between_traces
+        self.save_traces = save_traces
+        self.novelty_based = novelty_based
         self.actuation_variance = actuation_variance
         self.obstacles = obstacles
         if self.obstacles:

@@ -3,7 +3,8 @@ import random
 import numpy as np
 import subprocess as sub
 
-from read_write_voxelyze import read_voxlyze_results, write_voxelyze_file
+from read_write_voxelyze import read_voxlyze_results, write_voxelyze_file, read_voxelyze_centroids
+from utils import from_centroids_to_trajectory
 
 
 # TODO: make eval times relative to the number of simulated voxels
@@ -163,7 +164,10 @@ def evaluate_all(sim, env, pop, print_log, save_vxa_every, run_directory, run_na
                     already_analyzed_ids.append(this_id)
 
                     ind_filename = run_directory + "/fitnessFiles/" + ls_check
+
                     objective_values_dict = read_voxlyze_results(pop, print_log, ind_filename)
+                    if env.novelty_based:
+                        centroids = read_voxelyze_centroids(pop, print_log, ind_filename)
 
                     print_log.message("{0} fit = {1} ({2} / {3})".format(ls_check, objective_values_dict[0],
                                                                          num_evals_finished,
@@ -178,6 +182,8 @@ def evaluate_all(sim, env, pop, print_log, save_vxa_every, run_directory, run_na
                             for rank, details in pop.objective_dict.items():
                                 if objective_values_dict[rank] is not None:
                                     setattr(ind, details["name"], objective_values_dict[rank])
+                                    if env.novelty_based:
+                                        setattr(ind, "trajectory", from_centroids_to_trajectory(centroids))
                                 else:
                                     # for network in ind.genotype:
                                     #     for name in network.output_node_names:

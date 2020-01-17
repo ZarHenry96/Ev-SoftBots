@@ -1,7 +1,9 @@
 import hashlib
 import os
 import time
+import xml.etree.ElementTree as ET
 import random
+import numpy as np
 
 
 def read_voxlyze_results(population, print_log, filename="softbotsOutput.xml"):
@@ -35,6 +37,38 @@ def read_voxlyze_results(population, print_log, filename="softbotsOutput.xml"):
         this_file.close()
 
     return results
+
+
+def read_voxelyze_centroids(population, print_log, filename="softbotsOutput.xml"):
+    i = 0
+    max_attempts = 60
+    file_size = 0
+    this_file = ""
+
+    while (i < max_attempts) and (file_size == 0):
+        try:
+            file_size = os.stat(filename).st_size
+            this_file = open(filename)
+            this_file.close()
+        except ImportError:  # TODO: is this the correct exception?
+            file_size = 0
+        i += 1
+        time.sleep(1)
+
+    if file_size == 0:
+        print_log.message("ERROR: Cannot find a non-empty fitness file in %d attempts: abort" % max_attempts)
+        exit(1)
+
+    centroids = []
+    root = ET.parse(filename).getroot()
+    for trace in root.findall('CMTrace/TraceStep'):
+        t = float(trace.find('Time').text)
+        x = float(trace.find('TraceX').text)
+        y = float(trace.find('TraceY').text)
+        z = float(trace.find('TraceZ').text)
+        centroids.append(np.array([x, y, z, t]))
+
+    return centroids
 
 
 def write_voxelyze_file(sim, env, individual, run_directory, run_name):
@@ -205,6 +239,7 @@ def write_voxelyze_file(sim, env, individual, run_directory, run_name):
         <TempPeriod>" + str(env.period) + "</TempPeriod>\n\
         </Thermal>\n\
         <TimeBetweenTraces>" + str(env.time_between_traces) + "</TimeBetweenTraces>\n\
+        <SaveTraces>" + str(env.save_traces) + "</SaveTraces>\n\
         <StickyFloor>" + str(env.sticky_floor) + "</StickyFloor>\n\
         </Environment>\n")
 

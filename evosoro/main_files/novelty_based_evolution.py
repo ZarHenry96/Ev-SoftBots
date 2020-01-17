@@ -42,7 +42,7 @@ from evosoro.base import Sim, Env, ObjectiveDict
 from evosoro.new_material import NewMaterial
 from evosoro.networks import CPPN
 from evosoro.softbot import Genotype, Phenotype, Population
-from evosoro.tools.algorithms import MaterialsOptimization
+from evosoro.tools.algorithms import MaterialsOptimization, ParetoOptimization, NoveltyBasedOptimization
 from evosoro.tools.utils import count_occurrences, make_material_tree
 from evosoro.tools.checkpointing import continue_from_checkpoint
 from evosoro.tools.selection import pareto_selection, pareto_tournament_selection
@@ -52,8 +52,8 @@ VOXELYZE_VERSION = '_voxcad'
 sub.call("cp ../" + VOXELYZE_VERSION + "/voxelyzeMain/voxelyze .", shell=True)
 
 NUM_RANDOM_INDS = 1  # Number of random individuals to insert each generation
-MAX_GENS = 200  # Number of generations (the first one is included)
-POPSIZE = 15  # Population size (number of individuals in the population)
+MAX_GENS = 50  # Number of generations (the first one is included)
+POPSIZE =  15 # Population size (number of individuals in the population)
 IND_SIZE = (6, 6, 6)  # Bounding box dimensions (x,y,z). e.g. (6, 6, 6) -> workspace is a cube of 6x6x6 voxels
 SIM_TIME = 5  # (seconds), including INIT_TIME!
 INIT_TIME = 1
@@ -63,10 +63,10 @@ TIME_TO_TRY_AGAIN = 30  # (seconds) wait this long before assuming simulation cr
 MAX_EVAL_TIME = 60  # (seconds) wait this long before giving up on evaluating this individual
 SAVE_LINEAGES = False
 MAX_TIME = 8  # (hours) how long to wait before autosuspending
-EXTRA_GENS = 0  # extra gens to run when continuing from checkpoint
+EXTRA_GENS = 100  # extra gens to run when continuing from checkpoint
 
-RUN_DIR = "materials_evolution_data_2"  # Subdirectory where results are going to be generated
-RUN_NAME = "Materials"
+RUN_DIR = "novelty_based_evolution_data"  # Subdirectory where results are going to be generated
+RUN_NAME = "Novelty-Based"
 CHECKPOINT_EVERY = 1  # How often to save an snapshot of the execution state to later resume the algorithm
 SAVE_POPULATION_EVERY = 1  # How often (every x generations) we save a snapshot of the evolving population
 
@@ -87,54 +87,25 @@ class MyGenotype(Genotype):
         #   types of passive voxels, softer and stiffer). The material IDs that you will see in the phenotype mapping
         #   dependencies refer to a predefined palette of materials currently hardcoded in tools/read_write_voxelyze.py:
         #   (0: empty, 1: passiveSoft, 2: passiveHard, 3: active+, 4:active-), but this can be changed.
-        self.add_network(CPPN(
-            output_node_names=["shape", "newOrOld", "newMuscleOrTissue", "oldMuscleOrTissue", "newMuscleType",
-                               "newTissueType", "muscleType", "tissueType"]))
+        # - a controller instance
+        self.add_network(CPPN(output_node_names=["shape", "muscleOrTissue", "muscleType", "tissueType"]))
 
         self.to_phenotype_mapping.add_map(name="material", tag="<Data>", func=make_material_tree,
-                                          dependency_order=["shape", "newOrOld", "newMuscleOrTissue",
-                                                            "oldMuscleOrTissue", "newMuscleType", "newTissueType",
-                                                            "muscleType", "tissueType"], output_type=int)
+                                          dependency_order=["shape", "muscleOrTissue", "muscleType", "tissueType"],
+                                          output_type=int)  # BUGFIX: "tissueType" was not listed
 
         self.to_phenotype_mapping.add_output_dependency(name="shape", dependency_name=None, requirement=None,
                                                         material_if_true=None, material_if_false="0")
 
-        self.to_phenotype_mapping.add_output_dependency(name="newOrOld", dependency_name="shape",
+        self.to_phenotype_mapping.add_output_dependency(name="muscleOrTissue", dependency_name="shape",
                                                         requirement=True, material_if_true=None,
-                                                        material_if_false=None)
+                                                        material_if_false=None)  # BUGFIX: was material_if_false=1
 
-        self.to_phenotype_mapping.add_output_dependency(name="newMuscleOrTissue", dependency_name="newOrOld",
-                                                        requirement=True, material_if_true=None,
-                                                        material_if_false=None)
+        self.to_phenotype_mapping.add_output_dependency(name="tissueType", dependency_name="muscleOrTissue",
+                                                        requirement=False, material_if_true="1", material_if_false="2")
 
-        self.to_phenotype_mapping.add_output_dependency(name="oldMuscleOrTissue", dependency_name="newOrOld",
-                                                        requirement=False, material_if_true=None,
-                                                        material_if_false=None)
-
-        self.to_phenotype_mapping.add_output_dependency(name="newMuscleType", dependency_name="newMuscleOrTissue",
-                                                        requirement=True, material_if_true="8", material_if_false="9")
-
-        self.to_phenotype_mapping.add_output_dependency(name="newTissueType", dependency_name="newMuscleOrTissue",
-                                                        requirement=False, material_if_true="6",
-                                                        material_if_false="7")
-
-        self.to_phenotype_mapping.add_output_dependency(name="muscleType", dependency_name="oldMuscleOrTissue",
+        self.to_phenotype_mapping.add_output_dependency(name="muscleType", dependency_name="muscleOrTissue",
                                                         requirement=True, material_if_true="3", material_if_false="4")
-
-        self.to_phenotype_mapping.add_output_dependency(name="tissueType", dependency_name="oldMuscleOrTissue",
-                                                        requirement=False, material_if_true="1",
-                                                        material_if_false="2")
-
-        self.materials = dict()
-        self.materials["6"] = NewMaterial(name="New_Passive_Soft", rgb=(0.6, 0.3, 0), type="tissue",
-                                          young_modulus=5000000.0, density=1e+006, cte=0)
-        self.materials["7"] = NewMaterial(name="New_Passive_Hard", rgb=(0.3, 0, 0), type="tissue",
-                                          young_modulus=500000000.0, density=1e+006, cte=0)
-        self.materials["8"] = NewMaterial(name="New_Active_+", rgb=(1, 1, 0), type="muscle", young_modulus=5000000.0,
-                                          density=1e+006, cte=0.05)
-        self.materials["9"] = NewMaterial(name="New_Active_-", rgb=(1, 0.5, 0), type="muscle", young_modulus=5000000.0,
-                                          density=1e+006, cte=-0.05)
-        self.materials = collections.OrderedDict(sorted(self.materials.items()))
 
 
 # Define a custom phenotype, inheriting from the Phenotype class
@@ -150,12 +121,8 @@ class MyPhenotype(Phenotype):
                 if np.sum(state>0) < np.product(self.genotype.orig_size_xyz) * min_percent_full:
                     return False
                 # Discarding the robot if it doesn't have at least a given percentage of muscles (materials 3 and 4)
-                if hasattr(self.genotype, "materials"):
-                    if count_occurrences(state, [3, 4, 8, 9]) < np.product(self.genotype.orig_size_xyz) * min_percent_muscle:
-                        return False
-                else:
-                    if count_occurrences(state, [3, 4]) < np.product(self.genotype.orig_size_xyz) * min_percent_muscle:
-                        return False
+                if count_occurrences(state, [3, 4]) < np.product(self.genotype.orig_size_xyz) * min_percent_muscle:
+                    return False
         return True
 
 
@@ -163,7 +130,7 @@ class MyPhenotype(Phenotype):
 my_sim = Sim(dt_frac=DT_FRAC, simulation_time=SIM_TIME, fitness_eval_init_time=INIT_TIME)
 
 # Setting up the environment object
-my_env = Env(sticky_floor=0, time_between_traces=0)
+my_env = Env(sticky_floor=0, time_between_traces=0.5, save_traces=1, novelty_based=True)
 
 # Now specifying the objectives for the optimization.
 # Creating an objectives dictionary
@@ -173,21 +140,15 @@ my_objective_dict = ObjectiveDict()
 # in a fitness .xml file, with a tag named "NormFinalDist"
 my_objective_dict.add_objective(name="fitness", maximize=True, tag="<NormFinalDist>")
 
-# Adding another objective named "old_materials", which should be minimized.
-# This information is computed in Python as the occurrences of old materials (materials number 1, 2, 3 and 4)
-my_objective_dict.add_objective(name="old_materials", maximize=False, tag=None,
-                                node_func=partial(count_occurrences, keys=[1, 2, 3, 4]),
+my_objective_dict.add_objective(name="energy", maximize=False, tag=None,
+                                node_func=partial(count_occurrences, keys=[3, 4]),
                                 output_node_name="material")
-
-#my_objective_dict.add_objective(name="num_voxels", maximize=False, tag=None,
-#                                node_func=partial(count_occurrences, keys=[1, 2, 3, 4, 6, 7, 8, 9]),
-#                                output_node_name="material")
 
 # Initializing a population of SoftBots
 my_pop = Population(my_objective_dict, MyGenotype, MyPhenotype, pop_size=POPSIZE)
 
 # Setting up our optimization
-my_optimization = MaterialsOptimization(my_sim, my_env, my_pop)
+my_optimization = NoveltyBasedOptimization(my_sim, my_env, my_pop)
 
 # And, finally, our main
 if __name__ == "__main__":

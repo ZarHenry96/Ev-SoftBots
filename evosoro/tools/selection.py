@@ -1,8 +1,8 @@
 import random
 import math
-
 import copy
 import numpy as np
+from utils import AMSS
 
 
 def fit_tournament_selection(population, tournament_size=2):
@@ -142,3 +142,42 @@ def pareto_tournament_selection(population):
     population.sort_by_objectives()
 
     return population.individuals
+
+
+def novelty_based_selection(population):
+    """
+    Parameters
+    ----------
+    population : Population
+        This provides the individuals for selection.
+
+    Returns
+    -------
+    new_population : list
+        A list of selected individuals.
+
+    """
+    if len(population) <= population.pop_size:
+        return population
+    else:
+        similarities = np.zeros(len(population), dtype=float)
+
+        for i in range(len(population)):
+            for j in range(i, len(population)):
+                sim = AMSS(population[i].trajectory, population[j].trajectory).trajectory_similarity()
+                similarities[i] += sim
+                if i != j:
+                    similarities[j] += sim
+
+        for i in range(len(population)):
+            setattr(population[i], "novelty", similarities[i])
+
+        print("similarities: ", similarities)
+        indeces = np.argpartition(similarities, population.pop_size)[:population.pop_size]
+        print("indeces: ", indeces)
+        new_population = [population[i] for i in indeces]
+
+        for ind in new_population:
+            ind.selected = 1
+
+        return new_population
