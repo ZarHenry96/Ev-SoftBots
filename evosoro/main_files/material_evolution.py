@@ -52,7 +52,7 @@ VOXELYZE_VERSION = '_voxcad'
 sub.call("cp ../" + VOXELYZE_VERSION + "/voxelyzeMain/voxelyze .", shell=True)
 
 NUM_RANDOM_INDS = 1  # Number of random individuals to insert each generation
-MAX_GENS = 50  # Number of generations (the first one is included)
+MAX_GENS = 200  # Number of generations (the first one is included)
 POPSIZE = 15  # Population size (number of individuals in the population)
 IND_SIZE = (6, 6, 6)  # Bounding box dimensions (x,y,z). e.g. (6, 6, 6) -> workspace is a cube of 6x6x6 voxels
 SIM_TIME = 5  # (seconds), including INIT_TIME!
@@ -65,7 +65,7 @@ SAVE_LINEAGES = False
 MAX_TIME = 8  # (hours) how long to wait before autosuspending
 EXTRA_GENS = 0  # extra gens to run when continuing from checkpoint
 
-RUN_DIR = "minimize_materials_evolution_data"  # Subdirectory where results are going to be generated
+RUN_DIR = "materials_evolution_data_2"  # Subdirectory where results are going to be generated
 RUN_NAME = "Materials"
 CHECKPOINT_EVERY = 1  # How often to save an snapshot of the execution state to later resume the algorithm
 SAVE_POPULATION_EVERY = 1  # How often (every x generations) we save a snapshot of the evolving population
@@ -179,9 +179,9 @@ my_objective_dict.add_objective(name="old_materials", maximize=False, tag=None,
                                 node_func=partial(count_occurrences, keys=[1, 2, 3, 4]),
                                 output_node_name="material")
 
-my_objective_dict.add_objective(name="num_voxels", maximize=False, tag=None,
-                                node_func=partial(count_occurrences, keys=[1, 2, 3, 4, 6, 7, 8, 9]),
-                                output_node_name="material")
+#my_objective_dict.add_objective(name="num_voxels", maximize=False, tag=None,
+#                                node_func=partial(count_occurrences, keys=[1, 2, 3, 4, 6, 7, 8, 9]),
+#                                output_node_name="material")
 
 # Initializing a population of SoftBots
 my_pop = Population(my_objective_dict, MyGenotype, MyPhenotype, pop_size=POPSIZE)

@@ -172,7 +172,7 @@ def mutate_controllers(pop, children, crossover_rate=0.4):
 def mutate_new_materials(pop, children, crossover_rate=0.4):
     # new materials crossover
     random.shuffle(children)
-    for i in range(0, int(math.floor(crossover_rate*pop.pop_size))):
+    for i in range(0, int(math.floor(crossover_rate * pop.pop_size))):
         indices = random.sample(range(len(pop)), 2)
         new_materials_1 = pop[indices[0]].genotype.materials
         new_materials_2 = pop[indices[1]].genotype.materials
