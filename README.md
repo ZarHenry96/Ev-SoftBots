@@ -1,174 +1,42 @@
-evosoro: soft robot simulator
+Soft Robots Evolution
 =======================================
+We use the [Evosoro](https://github.com/skriegman/evosoro) Python library to simulate and design soft robots with multiple materials. We extend the model through the introduction of:
+* a method for evolving materials of a soft robot in combination with its morphology;
+* a novelty-based selection method to select the individuals which form the population in the next generation;
+* a method for evolving the signal controlling the soft robot together with its morphology;
+* an environment with simple obstacles to evolve complex behaviours.
 
-<div class="row">
-<a href=https://youtu.be/EXuR_soDnFo>
-<img src="https://github.com/skriegman/img/blob/master/nick.png" height="135" width="135">
-</a>
+[Read our report](https://github.com/ZarHenry96/Ev-SoftBots/blob/master/report.pdf) if you are interested in deepening the techniques adopted and results obtained.
 
-<a href=https://youtu.be/HgWQ-gPIvt4>
-<img src="https://github.com/skriegman/img/blob/master/electro.png" height="135" width="135">
-</a>
+Thanks to [Sam Kriegman](https://github.com/skriegman) for his useful starting codebase.
 
-<a href=https://youtu.be/4ZqdvYrZ3ro>
-<img src="https://github.com/skriegman/img/blob/master/swimming.png" height="135" width="135">
-</a>
-
-<a href=https://youtu.be/Cw2SwPNwcfM>
-<img src="https://github.com/skriegman/img/blob/master/plant1.png" height="135" width="135">
-</a>
-
-<a href=https://youtu.be/XqIUJcuOgmw>
-<img src="https://github.com/skriegman/img/blob/master/teeth1.png" height="135" width="135">
-</a>
-
-<a href=https://youtu.be/r_SL8VUt-wA>
-<img src="https://github.com/skriegman/img/blob/master/cage.png" height="135" width="135">
-</a>
-
-</div>
-
-Evosoro is a Python soft robot simulation library based on the Voxelyze physics engine. It provides a high-level interface for the dynamic simulation and automated design of soft multimaterial robots.
-<!-- evolutionary design of soft multimaterial robots. -->
-
-Evosoro was designed and developed by the [Morphology, Evolution & Cognition Laboratory](http://www.meclab.org), University of Vermont. 
-The library is built on top of the open source [VoxCAD](https://github.com/jonhiller/VoxCAD
-) and the underlying voxel physics engine ([Voxelyze](https://github.com/jonhiller/Voxelyze)) which were both developed by the [Creative Machines Lab](http://www.creativemachineslab.com/), Columbia University.
-
-
-
-(1) Citing
-------
-
-If using this code for academic purposes please consider citing the following two papers.
-
-Voxelyze physics engine and VoxCAD GUI:
-
->Hiller, J., & Lipson, H. (2014). 
->*Dynamic simulation of soft multimaterial 3d-printed objects.*
->Soft Robotics, 1(1), 88-101.
-
-Encoding and optimization (genetic algorithm):
-
->Cheney, N., MacCurdy, R., Clune, J., & Lipson, H. (2013). 
->*Unshackling evolution: evolving soft robots with multiple materials and a powerful generative encoding.* 
->In Proceedings of the 15th annual conference on Genetic and evolutionary computation (pp. 167-174). ACM.
-
-
-
-(2) Installation
+(1) Installation
 ------------
+For a detailed explanation on how to install and run the model see [Installation](https://github.com/skriegman/evosoro#2-installation). If you encounter any issue while running the model, you might refer to [Known issues](https://github.com/skriegman/evosoro#4-known-issues).
 
-It is recommended that you install [Anaconda](https://docs.continuum.io/anaconda/install#) as your Python (2.7) distribution. Anaconda is a free package manager and Python distribution that includes all of the dependencies required for evosoro. However if you instead choose to manually install Python 2.7, the following packages are required: scipy, numpy, networkx, decorator.
+(2) Materials Evolution
+------------
+In [Evosoro](https://github.com/skriegman/evosoro), the materials a soft robot can be made of are hard-coded in a configuration file which is read by [Voxelize](https://github.com/jonhiller/Voxelyze), a physics engine to simulate multi-material voxel. We extend the genotype of the soft robot, meaning the Compositional Pattern-Producing Network (CPPN), by including four new nodes representing the new materials in the output layer of the network. Then, we use a simple Genetic Algorithm (GA) to evolve the physical properties of these newly introduced materials. 
+Here you can see some examples of the soft robots evolved using this strategy: both the yellow and orange materials represent muscles, while the brown material represents a tissue.
+<img src="https://github.com/ZarHenry96/Ev-SoftBots/blob/master/img/materials-softbots.png" alt="materials evolution" width="500" height="250"/>
 
-Also networkx must be <2.0. When networkx updated 1.0-->2.0 some function changed and I haven't updated the python code to reflect this change.
+(3) Novelty-Based Search
+------------
+Differently from [Evosoro](https://github.com/skriegman/evosoro), where the soft robots that are going to form the population of the next generation are chosen based on multiple objective functions, we introduce an additional selection method https://github.com/ZarHenry96/Ev-SoftBots/blob/master/report.pdfwhich selects robots based on their "*novelty*". In our implementation, the "*novelty*" of a soft robot depends on its trajectory: the higher the diversity of the robot's trajectory, the higher its "*novelty*". The similarity/distance between trajectories is determined using the Angular Metric for Shape Similarity ([AMSS](https://www.konan-u.ac.jp/hp/seki/myarticles/nakamura2012paa.pdf)).
+Here you can see some examples of the soft robots evolved using this selection method.
 
-    pip install networkx==1.11
+<img src="https://github.com/ZarHenry96/Ev-SoftBots/blob/master/img/novelty-softbots.png" alt="novelty-based search" width="500" height="500"/>
 
+(4) Controller Evolution
+------------
+In [Evosoro](https://github.com/skriegman/evosoro), the expansion and contraction of active voxels are determined by an environmental parameter named temperature. This signal is modeled as a sinusoidal function with a customizable period and amplitude. Similar to what has been done for the materials, we extend the genotype of the soft robot by including the two parameters controlling the temperature and the Coefficient of linear Thermal Expansion (CTE) controlling how the active voxels react to the signal. Then, we use a simple GA to evolve these properties in combination with the morphology of the soft robot.
+Here you can see some examples of the soft robots evolves using this strategy.
 
-Install Qt and QMake if you have not already done so, specifically these packages: "libqt4-dev", "qt4-qmake", "libqwt-dev", "freeglut3-dev" and "zlib1g-dev".
+<img src="https://github.com/ZarHenry96/Ev-SoftBots/blob/master/img/controller-softbots.png" alt="controller evolution" width="500" height="250"/>
 
-    sudo apt-get install libqt4-dev qt4-qmake libqwt-dev freeglut3-dev zlib1g-dev
+(5) Evolution vs Obstacles
+------------
+Inspired by the environments designed in [Evosoro](https://github.com/skriegman/evosoro), we decided to design our environment containing obstacles to evolve robots with complex behaviours. 
+Here you can see an example of an evolved soft robots which succeed in overcoming the obstacles.
 
-
-Install git if you have not already done so.
-
-    sudo apt-get install git
-
-Navigate to your working directory (e.g. your home).
-
-    cd ~
-
-Clone the repo.
-
-    git clone https://github.com/skriegman/evosoro.git
-
-There are different well documented examples (evosoro/examples) and custom versions of VoxCad/Voxelyze included in this repository (evosoro/_voxcad* folders).
-Let's try running an example in which soft robots are optimized to locomote in a terrestrial environment, using an evolutionary algorithm and a basic version (_voxcad) of the physics engine (the procedure is the same for all the examples). 
-
-Navigate to the _voxcad directory:
-
-    cd evosoro/evosoro/_voxcad/
-
-The following command compiles both VoxCad and Voxelyze, installing the library at the same time:
-
-    ./rebuild_everything.sh
-
-If you happen to modify VoxCad or Voxelyze in the future, you can call the same script to be sure to clean and recompile everything. 
-
-    make
-
-Install the voxelyze library.
-
-    cd Voxelyze
-    make
-    make installusr
-    cd ../voxelyzeMain/
-    make
-
-Navigate back out to the examples folder and run basic.py
-    
-    cd ../examples
-    python basic.py
-
-You should start seeing some output being produced in your console, and a new directory being created (evosoro/evosoro/basic_data), which contains the results of the simulation.
-
-
-
-(3) Examples
---------
-
-After allowing basic.py to run for a few generations, you can view the evolved morphologies and behaviors by opening up the generated .vxa files within the VoxCAD GUI. A .vxa file is just an XML file representing a robot that can be simulated by VoxCad/Voxelyze. Different versions of the physics engine can play slightly different .vxa files.
-Navigate to evosoro/evosoro/_voxcad/release:
-    
-    cd ../_voxcad/release
-    
-Open VoxCad:
-
-    ./VoxCad
-
-Then select the desired .vxa file from 
-
-    "File -> Import -> Simulation"
-
-The .vxa files for the best performing individuals will be saved in 
-
-    evosoro/evosoro/examples/basic_data/bestSoFar/fitOnly.
-
-Once the design is loaded, you can start the physics simulation by clicking the <img src="https://github.com/skriegman/evosoro/blob/master/evosoro/_voxcad/VoxCad/Icons/Sandbox.png" height="25" width="25"> icon in the top bar ("Physics Sandbox").  The robot should start moving: if it doesn't, please check the following section (Known issues).
-
-
-(4) Known issues
---------
-
-Some versions of VoxCad utilize the qhull library (http://www.qhull.org/). In these versions of the GUI, the 'qhull' executable must be present in your binary path.
-
-    sudo apt-get install qhull-bin
-
-If the robot does not move, disappears, or seems to behave in an unexpected manner when running a .vxa file in VoxCad (GUI), you may be affected by a known problem observed on some non-US machines.
-The problem is due to an unexpected behavior of the <a href="http://www.cplusplus.com/reference/cstdlib/atof/">atof</a> function when the system's numeric <a href="https://en.wikipedia.org/wiki/Locale_(computer_software)">locale</a> differs from en_US.UTF-8, which entails loading wrong parameters from the .vxa file (in some cases it was observed how the atof function was approximating all double and floating point values to their integer part, which was the cause of the unexpected behavior).
-
-While we work on a better solution, you can fix this problem by making sure that your machine is configured according to a US numeric locale.
-Open the following file:
-
-    sudo gedit /etc/default/locale
-
-Make sure that LC_NUMERIC is set as follows:
-
-    LC_NUMERIC="en_US.UTF-8"
-
-Save, close the file, and reboot.
-
-
-(5) Documentation
--------------
-
-Although the code included in this repository diverged from the main VoxCad/Voxelyze development branch some time ago, useful indications could be find in the online Voxelyze documentation, available [here](http://jonhiller.github.io/Voxelyze/annotated.html).
-
-
-(6) License
--------
-
-Released under a MIT License (MIT)
-
-
+<img src="https://github.com/ZarHenry96/Ev-SoftBots/blob/master/img/over-obstacle-softbot.png" alt="controller evolution" width="300" height="250"/>
