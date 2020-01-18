@@ -1,3 +1,6 @@
+import os
+import sys
+sys.path.append(os.getcwd() + "/../..")
 from evosoro.tools.data_analysis import get_fitness_trends, plot_fitness_trends
 
 # directory names
