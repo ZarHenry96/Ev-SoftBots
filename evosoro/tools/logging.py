@@ -56,7 +56,7 @@ def make_header(population, path):
     #     objective = population.objective_dict[rank]
     #     header_string += "\t\t" + objective["name"] + "\t\t" + "parent_" + objective["name"]
 
-    header_string = "gen\t\tid\t\tdom\t\tparent_id\t\tvariation_type"
+    header_string = "gen\t\tid\t\tdom\t\tparent_id\t\tnovelty\t\tvariation_type"
 
     # columns for objectives
     for rank in range(len(population.objective_dict)):
@@ -95,8 +95,8 @@ def record_individuals_data(pop, path, num_inds_to_save=None, print_to_terminal=
         for rank in range(len(pop.objective_dict)):
             objective = pop.objective_dict[rank]
             header_string += "\t\t{:15}".format(objective["name"]) + "\t\t{:15}".format("parent_"+objective["name"])
-        header_string += "\t\t{:15}".format("novelty")
         header_string += "\t\tparent_id"
+        header_string += "\t\t{:15}".format("novelty")
         header_string += "\t\tvariation_type"
 
         print "\n"+header_string
@@ -149,8 +149,8 @@ def record_individuals_data(pop, path, num_inds_to_save=None, print_to_terminal=
         recording_file.write("{}\t\t".format(int(pop.gen)) +
                              "{}\t\t".format(int(ind.id)) +
                              "{}\t\t".format(int(len(ind.dominated_by))) +
-                             "{}\t\t".format(float(ind.novelty)) +
                              "{}\t\t".format(int(ind.parent_id)) +
+                             "{}\t\t".format(float(ind.novelty)) +
                              ind.variation_type + "\t\t" +
                              objectives_string + "\n")
 
@@ -159,8 +159,8 @@ def record_individuals_data(pop, path, num_inds_to_save=None, print_to_terminal=
                   "{:5d}\t".format(int(ind.id)) +
                   "{:5d}\t".format(int(len(ind.dominated_by))) +
                   objectives_string_print +
-                  "{:15}\t".format(float(ind.novelty)) +
                   "{:5d}\t\t".format(int(ind.parent_id)) +
+                  "{:15f}\t".format(float(ind.novelty)) +
                   ind.variation_type)
 
         n += 1

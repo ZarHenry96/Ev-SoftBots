@@ -52,7 +52,7 @@ VOXELYZE_VERSION = '_voxcad'
 sub.call("cp ../" + VOXELYZE_VERSION + "/voxelyzeMain/voxelyze .", shell=True)
 
 NUM_RANDOM_INDS = 1  # Number of random individuals to insert each generation
-MAX_GENS = 50  # Number of generations (the first one is included)
+MAX_GENS = 200  # Number of generations (the first one is included)
 POPSIZE =  15 # Population size (number of individuals in the population)
 IND_SIZE = (6, 6, 6)  # Bounding box dimensions (x,y,z). e.g. (6, 6, 6) -> workspace is a cube of 6x6x6 voxels
 SIM_TIME = 5  # (seconds), including INIT_TIME!
@@ -63,9 +63,9 @@ TIME_TO_TRY_AGAIN = 30  # (seconds) wait this long before assuming simulation cr
 MAX_EVAL_TIME = 60  # (seconds) wait this long before giving up on evaluating this individual
 SAVE_LINEAGES = False
 MAX_TIME = 8  # (hours) how long to wait before autosuspending
-EXTRA_GENS = 100  # extra gens to run when continuing from checkpoint
+EXTRA_GENS = 30  # extra gens to run when continuing from checkpoint
 
-RUN_DIR = "novelty_based_evolution_data"  # Subdirectory where results are going to be generated
+RUN_DIR = "novelty_based_evolution_data_3"  # Subdirectory where results are going to be generated
 RUN_NAME = "Novelty-Based"
 CHECKPOINT_EVERY = 1  # How often to save an snapshot of the execution state to later resume the algorithm
 SAVE_POPULATION_EVERY = 1  # How often (every x generations) we save a snapshot of the evolving population

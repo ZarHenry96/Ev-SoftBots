@@ -163,7 +163,14 @@ def novelty_based_selection(population):
         similarities = np.zeros(len(population), dtype=float)
 
         for i in range(len(population)):
+            if not population[i].trajectory:
+                # the phenotype of the individual is invalid
+                similarities[i] = 10000000.0
+                continue
             for j in range(i, len(population)):
+                if not population[j].trajectory:
+                    # the phenotype of the individual is invalid
+                    continue
                 sim = AMSS(population[i].trajectory, population[j].trajectory).trajectory_similarity()
                 similarities[i] += sim
                 if i != j:

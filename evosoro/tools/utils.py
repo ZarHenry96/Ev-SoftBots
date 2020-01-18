@@ -301,22 +301,22 @@ def count_neighbors(output_state, mask=None):
     return num_neighbors
 
 
-def angle2D_between(vec_1, vec_2):
+def angle2D_between(c_1, c_2):
     """
     Returns the angle in radians between vectors 'vec_1' and 'vec_2'::
 
     """
-    dx = vec_2[0] - vec_1[0]
-    dy = vec_2[1] - vec_1[0]
+    dx = c_2[0] - c_1[0]
+    dy = c_2[1] - c_1[1]
 
     angle = math.atan2(dy, dx)
 
     return angle
 
 def from_centroids_to_trajectory(centroids):
-    #x = [e[0] for e in centroids]
-    #y = [e[1] for e in centroids]
-    #plt.plot(x, y, 'bo')
+    x = [e[0] for e in centroids]
+    y = [e[1] for e in centroids]
+    plt.plot(x, y, 'bo')
 
     #print("before translation: ", centroids)
     #for i in range(len(centroids) - 1, -1, -1):
@@ -328,13 +328,13 @@ def from_centroids_to_trajectory(centroids):
 
     # apply rotation transformation
     theta = angle2D_between(centroids[0][:2], centroids[1][:2])
-    #print("theta: ", theta)
     cos, sin = np.cos(theta), np.sin(theta)
     rot_mat = np.array(((cos, sin), (-sin, cos)))
 
     for i in range(0, len(centroids)):
         mat_mul = np.matmul(rot_mat, centroids[i][:2])
         centroids[i][:2] = mat_mul
+
     #print("after rotation: ", centroids)
     #print()
 
@@ -359,11 +359,33 @@ class AMSS:
         self.v2 = v2
         self.sim_mat = np.zeros((len(self.v1), len(self.v2)), dtype=float)
 
+    def unit_vector(self, vector):
+        """ Returns the unit vector of the vector.  """
+        return vector / np.linalg.norm(vector)
+
+    def angle_between(self, v1, v2):
+        """ Returns the angle in radians between vectors 'v1' and 'v2'::
+
+        angle_between((1, 0, 0), (0, 1, 0))
+        1.5707963267948966
+        angle_between((1, 0, 0), (1, 0, 0))
+        0.0
+        angle_between((1, 0, 0), (-1, 0, 0))
+        3.141592653589793
+
+        """
+        v1_u = self.unit_vector(v1)
+        v2_u = self.unit_vector(v2)
+        return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+
     def similarity(self, vec_1, vec_2):
-        angle = angle2D_between(vec_1, vec_2)
+        angle = self.angle_between(vec_1, vec_2)
+        #print("theta: ", angle)
+        #print("theta between {} and {}").format(vec_1, vec_2)
+        #print("theta: {}").format(np.degrees(angle))
         similarity = 0.0
 
-        if angle < math.pi / 2.0:
+        if angle <= math.pi / 2.0:
             similarity = 1 - spatial.distance.cosine(vec_1, vec_2)
 
         return similarity
@@ -409,11 +431,12 @@ if __name__ == "__main__":
     centroids = np.array(
         [[3, 0], [3, 1], [2, 2], [1, 3], [0, 3], [-1, 3], [-2, 2], [-3, 1], [-3, 0], [-3, -1], [-2, -2], [-1, -3],
          [0, -3], [1, -3], [2, -2], [3, -1]])
+    #centroids = np.array([[3, 3], [-3, -3], [-3, 3], [3, -3]])
     trajectories = [[c, c*2, c*3] for c in centroids]
     for trajectory in trajectories:
         print("trajectory: ", trajectory)
-        transf_trajectory = from_centroids_to_trajectory(trajectory)
-        print("transf_trajectory: ", transf_trajectory)
+        trasf_trajectory = from_centroids_to_trajectory(trajectory)
+        print("trasf_trajectory: ", trasf_trajectory)
 
 
 

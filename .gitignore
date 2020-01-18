@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# Pdf
+*.pdf
+
 # Distribution / packaging
 .Python
 env/
@@ -64,7 +67,7 @@ evosoro/_voxcad_forTransfer
 #evosoro/main_files/*_*
 evosoro/main_files/plotAfpoTraces.py
 evosoro/main_files/*_data
-
+evosoro/main_files/*_data_[0-9]*
 
 evosoro/pbs/
 evosoro/data_analysis/
